@@ -9,9 +9,9 @@ import { Label } from '../components/ui/label';
 import { useToast } from '../hooks/use-toast';
 
 const contactInfo = [
-  { icon: Mail, label: 'Email', value: 'alex.morgan@example.com', href: 'mailto:alex.morgan@example.com' },
-  { icon: Phone, label: 'Phone', value: '+1 (555) 123-4567', href: 'tel:+15551234567' },
-  { icon: MapPin, label: 'Location', value: 'San Francisco, CA', href: '#' },
+  { icon: Mail, label: 'Email', value: 'kodnidiyanadesilva123@gmail.com', href: 'mailto:alex.morgan@example.com' },
+  { icon: Phone, label: 'Phone', value: '074 2772707', href: 'tel:+15551234567' },
+  { icon: MapPin, label: 'Location', value: 'Sri lanka, Matara', href: '#' },
 ];
 
 const socialLinks = [
