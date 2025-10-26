@@ -10,25 +10,12 @@ const timeline = [
     description: 'Leading development of enterprise solutions and mentoring junior developers.',
     icon: Briefcase,
   },
+  
   {
-    year: '2022',
-    title: 'Full Stack Developer',
-    company: 'Digital Solutions Co.',
-    description: 'Built scalable web applications and improved system architecture.',
-    icon: Briefcase,
-  },
-  {
-    year: '2020',
-    title: 'Frontend Developer',
-    company: 'Creative Studio',
-    description: 'Developed responsive user interfaces and collaborated with design teams.',
-    icon: Briefcase,
-  },
-  {
-    year: '2019',
-    title: 'B.S. Computer Science',
-    company: 'University of Technology',
-    description: 'Graduated with honors, specialized in software engineering and AI.',
+    year: '2027',
+    title: 'B.S. Information Technology',
+    company: 'Sri Lanka Institute of Information Technology',
+    description: 'Graduated with honors, specialized in IT Specialization.',
     icon: GraduationCap,
   },
 ];
