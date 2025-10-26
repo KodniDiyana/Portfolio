@@ -1,17 +1,28 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ExternalLink, Github, Filter } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Progress } from '../components/ui/progress';
-import paddyImage from '../asset/paddy.jpg'; // ✅ your local image
 
-/** ─────────────────────────────────────────────────────────────
- *  Add your GitHub repositories here as "owner/repo" strings.
- *  ───────────────────────────────────────────────────────────── */
+// ✅ Local images
+import paddyImage from '../assets/paddy.jpg';
+import whaleImage from '../assets/whale.jpg';
+
+/*──────────────────────────────────────────────
+  GitHub Repositories (owner/repo format)
+──────────────────────────────────────────────*/
 const REPOS = [
-  'kiruluchamika/Golden-Grain-Mill-ITP-Project'
+  'kiruluchamika/Golden-Grain-Mill-ITP-Project',
+  'KodniDiyana/Whale_Watching_MobileApp',
 ];
 
 type Project = {
@@ -28,8 +39,20 @@ type Project = {
 
 const categoriesAll = ['all', 'web', 'mobile', 'ai'] as const;
 
+// ✅ Image mapping
+const IMAGE_MAP: Record<string, string> = {
+  'kiruluchamika/golden-grain-mill-itp-project': paddyImage,
+  'kodnidiyana/whale_watching_mobileapp': whaleImage,
+};
+
+// ✅ Default fallback image
+const FALLBACK_IMAGE =
+  'https://images.pexels.com/photos/301972/pexels-photo-301972.jpeg?auto=compress&cs=tinysrgb&w=800';
+
 export function Projects() {
-  const [selectedCategory, setSelectedCategory] = useState<(typeof categoriesAll)[number]>('all');
+  const [selectedCategory, setSelectedCategory] = useState<
+    (typeof categoriesAll)[number]
+  >('all');
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
@@ -38,31 +61,35 @@ export function Projects() {
       try {
         const fetched = await Promise.all(
           REPOS.map(async (full) => {
+            const key = full.toLowerCase();
             const [owner, repo] = full.split('/');
 
-            // Fetch repo details
+            // Repo details
             const repoRes = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
               headers: { Accept: 'application/vnd.github+json' },
             });
             if (!repoRes.ok) throw new Error(`Failed to load ${full}`);
             const repoJson = await repoRes.json();
 
-            // Fetch topics
+            // Topics
             const topicsRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/topics`, {
               headers: { Accept: 'application/vnd.github.mercy-preview+json' },
             });
             const topicsJson = topicsRes.ok ? await topicsRes.json() : { names: [] };
 
-            // Fetch languages
+            // Languages
             const langsRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/languages`);
             const langsJson = langsRes.ok ? await langsRes.json() : {};
             const languages = Object.keys(langsJson);
 
-            // Known tech tags
-            const knownTech =
-              full.toLowerCase() === 'kiruluchamika/golden-grain-mill-itp-project'
-                ? ['Spring Boot', 'React', 'MySQL', 'Stripe', 'JWT']
-                : [];
+            // Known tech (manual additions)
+            let knownTech: string[] = [];
+            if (key === 'kiruluchamika/golden-grain-mill-itp-project') {
+              knownTech = ['Spring Boot', 'React', 'MySQL', 'Stripe', 'JWT'];
+            }
+            if (key === 'kodnidiyana/whale_watching_mobileapp') {
+              knownTech = ['Android', 'Kotlin', 'Firebase'];
+            }
 
             const tags = Array.from(
               new Set<string>([
@@ -72,30 +99,44 @@ export function Projects() {
               ])
             ).slice(0, 8);
 
-            const category: Project['category'] = 'web';
-            const demo = repoJson.homepage && repoJson.homepage.trim().length > 0
-              ? repoJson.homepage
-              : repoJson.html_url;
+            // Category mapping
+            const category: Project['category'] =
+              key === 'kodnidiyana/whale_watching_mobileapp' ? 'mobile' : 'web';
 
-            const title =
-              repoJson.name === 'Golden-Grain-Mill-ITP-Project'
-                ? 'Golden Grain Mill – Management System'
-                : repoJson.name;
+            // Demo/homepage
+            const demo =
+              repoJson.homepage && repoJson.homepage.trim().length > 0
+                ? repoJson.homepage
+                : repoJson.html_url;
 
-            const description =
-              repoJson.description ||
-              'Full-stack platform for Sri Lanka’s rice & paddy ecosystem with supplier/buyer workflows, inventory, invoices, payments, and analytics.';
+            // Title & description
+            let title = repoJson.name || repo;
+            let description = repoJson.description || '';
+            if (key === 'kiruluchamika/golden-grain-mill-itp-project') {
+              title = 'Golden Grain Mill – Management System';
+              description =
+                description ||
+                'Full-stack platform for Sri Lanka’s rice & paddy ecosystem with supplier/buyer workflows, inventory, invoices, payments, and analytics.';
+            }
+            if (key === 'kodnidiyana/whale_watching_mobileapp') {
+              title = 'Whale Watching – Mobile App';
+              description =
+                description ||
+                'Mobile app for booking whale-watching tours with schedules, ticket booking, and live weather integration.';
+            }
 
-            const progress = repoJson.archived ? 80 : 100;
+            // Progress heuristic
+            const progress = repoJson.archived ? 85 : 100;
 
-            const image = paddyImage; // ✅ Use your local paddy.jpg
+            // Image
+            const image = IMAGE_MAP[key] || FALLBACK_IMAGE;
 
             return {
               id: repoJson.id ?? full,
               title,
               description,
               image,
-              tags: tags.length ? tags : ['Spring Boot', 'React', 'MySQL'],
+              tags: tags.length ? tags : ['Project'],
               category,
               progress,
               github: repoJson.html_url,
@@ -107,19 +148,31 @@ export function Projects() {
         setProjects(fetched);
       } catch (err) {
         console.error(err);
-        // Fallback (offline or GitHub API blocked)
+        // fallback offline state
         setProjects([
           {
             id: 'golden-grain-fallback',
             title: 'Golden Grain Mill – Management System',
             description:
               'Full-stack platform for Sri Lanka’s rice & paddy ecosystem with supplier/buyer workflows, inventory, invoices, payments, and analytics.',
-            image: paddyImage, // ✅ Local image fallback
+            image: paddyImage,
             tags: ['Spring Boot', 'React', 'MySQL', 'Stripe', 'JWT'],
             category: 'web',
             progress: 100,
             github: 'https://github.com/kiruluchamika/Golden-Grain-Mill-ITP-Project',
             demo: 'https://github.com/kiruluchamika/Golden-Grain-Mill-ITP-Project',
+          },
+          {
+            id: 'whale-app-fallback',
+            title: 'Whale Watching – Mobile App',
+            description:
+              'Mobile app for booking whale-watching tours with schedules, ticket booking, and live weather integration.',
+            image: whaleImage,
+            tags: ['Android', 'Kotlin', 'Firebase'],
+            category: 'mobile',
+            progress: 100,
+            github: 'https://github.com/KodniDiyana/Whale_Watching_MobileApp',
+            demo: 'https://github.com/KodniDiyana/Whale_Watching_MobileApp',
           },
         ]);
       } finally {
@@ -144,15 +197,13 @@ export function Projects() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-12"
         >
-          <h1 className="text-4xl sm:text-5xl font-bold mb-4">
-            Featured Projects
-          </h1>
+          <h1 className="text-4xl sm:text-5xl font-bold mb-4">Featured Projects</h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             A showcase of my real work pulled directly from GitHub
           </p>
         </motion.div>
 
-        {/* Filters */}
+        {/* Filter Buttons */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -173,7 +224,7 @@ export function Projects() {
           ))}
         </motion.div>
 
-        {/* Loading / Empty states */}
+        {/* Loading and Empty States */}
         {loading && (
           <div className="text-center text-muted-foreground">Loading your projects…</div>
         )}
@@ -183,7 +234,7 @@ export function Projects() {
           </div>
         )}
 
-        {/* Projects grid */}
+        {/* Project Cards Grid */}
         <AnimatePresence mode="wait">
           {!loading && projects.length > 0 && (
             <motion.div
