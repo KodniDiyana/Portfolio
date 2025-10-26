@@ -4,19 +4,27 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 
 const timeline = [
   {
-    year: '2024',
-    title: 'Senior Full Stack Developer',
-    company: 'Tech Innovations Inc.',
-    description: 'Leading development of enterprise solutions and mentoring junior developers.',
+    year: '2026',
+    title: '🚀 Aspiring Full-Stack & UI/UX Developer',
+    company: 'Sri Lanka Institute of Information Technology.',
+    description: 'Preparing to begin an internship in UI/UX design and software development.',
     icon: Briefcase,
   },
   
   {
     year: '2027',
-    title: 'B.S. Information Technology',
+    title: '🎓B.Sc (Hons) Information Technology',
     company: 'Sri Lanka Institute of Information Technology',
-    description: 'Graduated with honors, specialized in IT Specialization.',
+    description: 'Graduate with honors, specialized in IT Specialization.',
     icon: GraduationCap,
+  },
+
+  {
+ year: '2022',
+    title: '💻 Independent Learning & Projects',
+    company: 'Sri Lanka Institute of Information Technology.',
+    description: 'Started exploring software design and development through online platforms.\nLearned the basics of UI/UX design tools and web technologies.',
+    icon: Briefcase,
   },
 ];
 
