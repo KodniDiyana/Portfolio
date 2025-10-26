@@ -29,7 +29,7 @@ export function Home() {
             transition={{ delay: 0.3, duration: 0.5 }}
             className="text-5xl sm:text-6xl lg:text-7xl font-bold mb-6 leading-tight"
           >
-            Hi, I'm{' '}
+            Hello, I'm{' '}
             <span className="bg-gradient-to-r from-blue-600 via-cyan-500 to-teal-500 bg-clip-text text-transparent">
               Kodni Diyana
             </span>
