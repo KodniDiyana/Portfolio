@@ -20,7 +20,7 @@ const timeline = [
     icon: GraduationCap,
   },
   {
-    year: '2022',
+    year: '2024',
     title: '💻 Independent Learning & Projects',
     company: 'Sri Lanka Institute of Information Technology.',
     description:
