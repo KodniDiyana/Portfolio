@@ -3,6 +3,9 @@ import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { Briefcase, GraduationCap, Award, Users, Target, Heart } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 
+/* ───────────── Shared easing (replaces "easeOut" string) ───────────── */
+const DEFAULT_EASE: [number, number, number, number] = [0.16, 1, 0.3, 1];
+
 /* ───────────── Existing Data (UNCHANGED) ───────────── */
 const timeline = [
   {
@@ -28,15 +31,13 @@ const timeline = [
     icon: Briefcase,
   },
 
-{
-year: '2025', 
-    title: '💻Highlighted projects', 
+  {
+    year: '2025',
+    title: '💻Highlighted projects',
     company: 'Sri Lanka Institute of Information Technology.',
-    description:
-      'Golden Grain Mill (Spring Boot + React + MySQL) web technologies.',
+    description: 'Golden Grain Mill (Spring Boot + React + MySQL) web technologies.',
     icon: Briefcase,
-}
-
+  },
 ];
 
 const values = [
@@ -74,8 +75,24 @@ const skillsBackend: Skill[] = [
 const skillsData: { title: string; items: Skill[] }[] = [
   { title: 'Frontend', items: skillsFrontend },
   { title: 'Backend', items: skillsBackend },
-  { title: 'Design', items: [ { label: 'Figma', level: 85 }, { label: 'UI/UX', level: 83 }, { label: 'Wireframing', level: 82 }, { label: 'Prototyping', level: 80 } ] },
-  { title: 'Tools', items: [ { label: 'Git', level: 86 }, { label: 'MySQL', level: 78 }, { label: 'Postman', level: 84 }, { label: 'Vite', level: 76 } ] },
+  {
+    title: 'Design',
+    items: [
+      { label: 'Figma', level: 85 },
+      { label: 'UI/UX', level: 83 },
+      { label: 'Wireframing', level: 82 },
+      { label: 'Prototyping', level: 80 },
+    ],
+  },
+  {
+    title: 'Tools',
+    items: [
+      { label: 'Git', level: 86 },
+      { label: 'MySQL', level: 78 },
+      { label: 'Postman', level: 84 },
+      { label: 'Vite', level: 76 },
+    ],
+  },
 ];
 
 /* ───────────── Small UI helpers / hooks ───────────── */
@@ -83,7 +100,7 @@ const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 24 },
   whileInView: { opacity: 1, y: 0 },
   viewport: { once: true, margin: '-80px' },
-  transition: { delay, duration: 0.6, ease: 'easeOut' },
+  transition: { delay, duration: 0.6, ease: DEFAULT_EASE },
 });
 
 function useCursorGlow() {
@@ -101,7 +118,17 @@ function useCursorGlow() {
   return { glow, onMouseMove };
 }
 
-function CountUp({ to, start = 0, duration = 900, className = '' }: { to: number; start?: number; duration?: number; className?: string }) {
+function CountUp({
+  to,
+  start = 0,
+  duration = 900,
+  className = '',
+}: {
+  to: number;
+  start?: number;
+  duration?: number;
+  className?: string;
+}) {
   const [n, setN] = useState(start);
   const ref = useRef<number>(start);
   useEffect(() => {
@@ -129,7 +156,7 @@ function FloatingBlob({ delay = 0, className = '' }: { delay?: number; className
     <motion.div
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 0.55, scale: 1 }}
-      transition={{ delay, duration: 1.2, ease: 'easeOut' }}
+      transition={{ delay, duration: 1.2, ease: DEFAULT_EASE }}
       className={`pointer-events-none absolute blur-3xl ${className}`}
     />
   );
@@ -149,9 +176,19 @@ function SkillChip({ label, level }: Skill) {
       <svg width="26" height="26" viewBox="0 0 26 26" className="shrink-0">
         <circle cx="13" cy="13" r={r} stroke="currentColor" strokeOpacity="0.15" strokeWidth="3" fill="none" />
         <motion.circle
-          cx="13" cy="13" r={r} stroke="currentColor" className="text-primary" strokeWidth="3" fill="none"
-          strokeDasharray={C} initial={{ strokeDashoffset: C }} whileInView={{ strokeDashoffset: offset }}
-          viewport={{ once: true, margin: '-80px' }} transition={{ duration: 1 }} strokeLinecap="round"
+          cx="13"
+          cy="13"
+          r={r}
+          stroke="currentColor"
+          className="text-primary"
+          strokeWidth="3"
+          fill="none"
+          strokeDasharray={C}
+          initial={{ strokeDashoffset: C }}
+          whileInView={{ strokeDashoffset: offset }}
+          viewport={{ once: true, margin: '-80px' }}
+          transition={{ duration: 1 }}
+          strokeLinecap="round"
         />
       </svg>
       <span className="text-sm">{label}</span>
@@ -206,7 +243,13 @@ export function About() {
 
           <motion.p className="text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed" style={{ y: ySlower }}>
             {intro.map((line, i) => (
-              <motion.span key={i} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 * i }} className="block">
+              <motion.span
+                key={i}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15 * i }}
+                className="block"
+              >
                 {line}
               </motion.span>
             ))}
@@ -245,11 +288,14 @@ export function About() {
                         initial={{ opacity: 0, x: -16 }}
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true, margin: '-80px' }}
-                        transition={{ delay: 0.05 * index, duration: 0.5, ease: 'easeOut' }}
+                        transition={{ delay: 0.05 * index, duration: 0.5, ease: DEFAULT_EASE }}
                         className="flex gap-4"
                       >
                         <div className="flex flex-col items-center">
-                          <motion.div whileHover={{ rotate: 5, scale: 1.05 }} className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 text-primary shadow-sm">
+                          <motion.div
+                            whileHover={{ rotate: 5, scale: 1.05 }}
+                            className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 text-primary shadow-sm"
+                          >
                             <item.icon className="w-5 h-5" />
                           </motion.div>
                           {index < timeline.length - 1 && <div className="w-0.5 h-full bg-border mt-2" />}
@@ -301,21 +347,44 @@ export function About() {
                   <CardDescription>Quick snapshot & contact</CardDescription>
                 </CardHeader>
                 <CardContent className="flex items-start gap-4">
-                  <motion.div initial={{ scale: 0.95, opacity: 0 }} whileInView={{ scale: 1, opacity: 1 }} viewport={{ once: true }} className="relative">
+                  <motion.div
+                    initial={{ scale: 0.95, opacity: 0 }}
+                    whileInView={{ scale: 1, opacity: 1 }}
+                    viewport={{ once: true }}
+                    className="relative"
+                  >
                     <div className="relative h-20 w-20 rounded-full bg-gradient-to-br from-primary/30 to-emerald-400/30 flex items-center justify-center ring-2 ring-primary/30">
                       <span className="text-xl font-semibold">KD</span>
-                      <motion.span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-primary" animate={{ y: [0, -3, 0] }} transition={{ repeat: Infinity, duration: 2 }} />
-                      <motion.span className="absolute -bottom-1 -left-1 h-2.5 w-2.5 rounded-full bg-emerald-400" animate={{ y: [0, 3, 0] }} transition={{ repeat: Infinity, duration: 2.2 }} />
+                      <motion.span
+                        className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-primary"
+                        animate={{ y: [0, -3, 0] }}
+                        transition={{ repeat: Infinity, duration: 2 }}
+                      />
+                      <motion.span
+                        className="absolute -bottom-1 -left-1 h-2.5 w-2.5 rounded-full bg-emerald-400"
+                        animate={{ y: [0, 3, 0] }}
+                        transition={{ repeat: Infinity, duration: 2.2 }}
+                      />
                     </div>
                   </motion.div>
 
                   <div className="flex-1">
                     <ul className="text-sm leading-6 text-muted-foreground">
-                      <li><span className="text-foreground">📍</span> Matara,Sri Lanka</li>
-                      <li><span className="text-foreground">💼</span> IT Undergraduate @ SLIIT</li>
-                      <li><span className="text-foreground">🎯</span> Focus: Frontend, UI/UX, Full-Stack</li>
-                      <li><span className="text-foreground">🌱</span> Learning: Next.js, Animations</li>
-                      <li><span className="text-foreground">✉️</span> kodnidiyanadesilva123@gmail.com</li>
+                      <li>
+                        <span className="text-foreground">📍</span> Matara,Sri Lanka
+                      </li>
+                      <li>
+                        <span className="text-foreground">💼</span> IT Undergraduate @ SLIIT
+                      </li>
+                      <li>
+                        <span className="text-foreground">🎯</span> Focus: Frontend, UI/UX, Full-Stack
+                      </li>
+                      <li>
+                        <span className="text-foreground">🌱</span> Learning: Next.js, Animations
+                      </li>
+                      <li>
+                        <span className="text-foreground">✉️</span> kodnidiyanadesilva123@gmail.com
+                      </li>
                     </ul>
                     {/* CTA buttons removed as requested */}
                   </div>
@@ -335,7 +404,7 @@ export function About() {
                 initial={{ opacity: 0, y: 16 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: '-80px' }}
-                transition={{ delay: 0.05 * index, duration: 0.45 }}
+                transition={{ delay: 0.05 * index, duration: 0.45, ease: DEFAULT_EASE }}
                 whileHover={{ y: -4, rotate: 0.2 }}
               >
                 <Card className="relative overflow-hidden text-center h-full group border border-border/60">
@@ -367,7 +436,7 @@ export function About() {
                     initial={{ opacity: 0, x: -14 }}
                     whileInView={{ opacity: 1, x: 0 }}
                     viewport={{ once: true, margin: '-80px' }}
-                    transition={{ delay: 0.05 * index, duration: 0.4, ease: 'easeOut' }}
+                    transition={{ delay: 0.05 * index, duration: 0.4, ease: DEFAULT_EASE }}
                   >
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium">{metric.label}</span>
@@ -378,7 +447,7 @@ export function About() {
                         initial={{ width: 0 }}
                         whileInView={{ width: `${metric.value}%` }}
                         viewport={{ once: true, margin: '-80px' }}
-                        transition={{ delay: 0.15 + index * 0.05, duration: 1, ease: 'easeOut' }}
+                        transition={{ delay: 0.15 + index * 0.05, duration: 1, ease: DEFAULT_EASE }}
                         className={`h-full ${metric.color} rounded-full`}
                       />
                     </div>
