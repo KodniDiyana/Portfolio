@@ -495,10 +495,16 @@ export function Home() {
                 <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Button>
             </Link>
-            <Button size="lg" variant="outline" className="group">
-              <Download className="mr-2 w-4 h-4 group-hover:translate-y-1 transition-transform" />
-              Download CV
-            </Button>
+         <a
+  href="/Kodni_Diyana_Final_CV.pdf"
+  target="_blank"
+  rel="noopener noreferrer"
+>
+  <Button size="lg" variant="outline" className="group">
+    <Download className="mr-2 w-4 h-4 group-hover:translate-y-1 transition-transform" />
+    Download CV
+  </Button>
+</a>
           </motion.div>
         </motion.div>
 
