@@ -514,7 +514,7 @@ export function Home() {
             <StatCard icon={<Code2 className="h-6 w-6" />} target={2} label="Years of Experience" />
             <StatCard icon={<GitBranch className="h-6 w-6" />} target={10} label="Projects Completed" delay={0.05} />
             <StatCard icon={<Server className="h-6 w-6" />} target={20} label="Technologies Mastered" delay={0.1} />
-            <StatCard icon={<Github className="h-6 w-6" />} target={300} label="GitHub Contributions" delay={0.15} />
+            <StatCard icon={<Github className="h-6 w-6" />} target={100} label="GitHub Contributions" delay={0.15} />
           </div>
         </section>
 
@@ -527,7 +527,7 @@ export function Home() {
         >
           <h2 className="text-4xl sm:text-5xl font-extrabold text-center mb-4">About Me</h2>
           <p className="text-center text-muted-foreground max-w-3xl mx-auto mb-12">
-            Passionate software engineer with a growing focus on modern web technologies and user-centered design.
+            Passionate IT specialized with a growing focus on modern web technologies and user-centered design.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -549,7 +549,7 @@ export function Home() {
               />
               <h3 className="text-2xl font-semibold mb-4">Technical Background</h3>
               <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
-                Currently pursuing a Bachelor’s degree in Computer Science (2<sup>nd</sup> year, 2<sup>nd</sup> semester).
+                Currently pursuing a Bachelor’s degree in Information Technology (3<sup>rd</sup> year, 1<sup>st</sup> semester).
                 Building foundations in programming and web technologies while practicing with{' '}
                 <strong>C++, PHP, HTML, CSS,</strong> and <strong>JavaScript</strong>.
               </p>
@@ -726,9 +726,9 @@ export function Home() {
 
                 <div className="space-y-5">
                   <SkillRow label="MongoDB" percent={85} icon={<BrandIcon name="mongodb" />} />
-                  <SkillRow label="PostgreSQL" percent={60} icon={<BrandIcon name="postgres" />} />
+                
                   <SkillRow label="MySQL" percent={75} icon={<BrandIcon name="mysql" />} />
-                  <SkillRow label="Redis" percent={70} icon={<BrandIcon name="redis" />} />
+                  
                 </div>
               </div>
             </div>
@@ -756,7 +756,6 @@ export function Home() {
 
                 <div className="space-y-5">
                   <SkillRow label="Git & GitHub" percent={90} icon={<BrandIcon name="git" />} />
-                  <SkillRow label="Docker" percent={60} icon={<BrandIcon name="docker" />} />
                   <SkillRow label="VS Code" percent={95} icon={<BrandIcon name="vscode" />} />
                   <SkillRow label="Postman" percent={85} icon={<BrandIcon name="postman" />} />
                 </div>
