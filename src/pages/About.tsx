@@ -173,24 +173,25 @@ function SkillChip({ label, level }: Skill) {
       whileHover={{ y: -2, scale: 1.02 }}
       className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/60 px-3 py-1.5 backdrop-blur-sm shadow-sm"
     >
-      <svg width="26" height="26" viewBox="0 0 26 26" className="shrink-0">
-        <circle cx="13" cy="13" r={r} stroke="currentColor" strokeOpacity="0.15" strokeWidth="3" fill="none" />
-        <motion.circle
-          cx="13"
-          cy="13"
-          r={r}
-          stroke="currentColor"
-          className="text-primary"
-          strokeWidth="3"
-          fill="none"
-          strokeDasharray={C}
-          initial={{ strokeDashoffset: C }}
-          whileInView={{ strokeDashoffset: offset }}
-          viewport={{ once: true, margin: '-80px' }}
-          transition={{ duration: 1 }}
-          strokeLinecap="round"
-        />
-      </svg>
+      <span className="text-primary shrink-0">
+        <svg width="26" height="26" viewBox="0 0 26 26">
+          <circle cx="13" cy="13" r={r} stroke="currentColor" strokeOpacity="0.15" strokeWidth="3" fill="none" />
+          <motion.circle
+            cx="13"
+            cy="13"
+            r={r}
+            stroke="currentColor"
+            strokeWidth="3"
+            fill="none"
+            strokeDasharray={C}
+            initial={{ strokeDashoffset: C }}
+            whileInView={{ strokeDashoffset: offset }}
+            viewport={{ once: true, margin: '-80px' }}
+            transition={{ duration: 1 }}
+            strokeLinecap="round"
+          />
+        </svg>
+      </span>
       <span className="text-sm">{label}</span>
       <span className="text-xs text-muted-foreground">{level}%</span>
     </motion.div>
