@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Moon, Sun, Code2 } from 'lucide-react';
+import { Moon, Sun, Code2, Menu, X } from 'lucide-react';
+import { useState } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 import { Button } from './ui/button';
 
@@ -13,6 +14,7 @@ const navItems = [
 
 export function Navbar() {
   const { theme, toggleTheme } = useTheme();
+  const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
 
   return (
@@ -58,25 +60,51 @@ export function Navbar() {
             })}
           </div>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleTheme}
-            className="rounded-full"
-          >
-            <motion.div
-              initial={{ scale: 0, rotate: -180 }}
-              animate={{ scale: 1, rotate: 0 }}
-              key={theme}
-              transition={{ type: 'spring', stiffness: 200, damping: 20 }}
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleTheme}
+              className="rounded-full"
             >
-              {theme === 'light' ? (
-                <Moon className="w-5 h-5" />
-              ) : (
-                <Sun className="w-5 h-5" />
-              )}
-            </motion.div>
-          </Button>
+              <motion.div
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                key={theme}
+                transition={{ type: 'spring', stiffness: 200, damping: 20 }}
+              >
+                {theme === 'light' ? (
+                  <Moon className="w-5 h-5" />
+                ) : (
+                  <Sun className="w-5 h-5" />
+                )}
+              </motion.div>
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden"
+              onClick={() => setMobileOpen((s) => !s)}
+              aria-label="Toggle menu"
+            >
+              {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </Button>
+          </div>
+        </div>
+        {/* Mobile menu - visible on small screens when toggled */}
+        <div
+          className={`md:hidden ${mobileOpen ? 'block' : 'hidden'} pb-4 border-b border-border/40 bg-background/90`}
+        >
+          <div className="flex flex-col space-y-1 px-2">
+            {navItems.map((item) => (
+              <Link key={item.path} to={item.path} onClick={() => setMobileOpen(false)}>
+                <Button variant="ghost" className="w-full justify-start px-3 py-2">
+                  {item.label}
+                </Button>
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
     </motion.nav>
