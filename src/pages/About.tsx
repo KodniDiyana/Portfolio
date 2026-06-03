@@ -48,10 +48,10 @@ const values = [
 ];
 
 const metrics = [
-  { label: 'Client Satisfaction', value: 98, color: 'bg-blue-500' },
-  { label: 'Code Quality', value: 95, color: 'bg-cyan-500' },
-  { label: 'Project Delivery', value: 100, color: 'bg-teal-500' },
-  { label: 'Team Collaboration', value: 96, color: 'bg-green-500' },
+  { label: 'Client Satisfaction', value: 98, color: 'bg-primary' },
+  { label: 'Code Quality', value: 95, color: 'bg-primary/80' },
+  { label: 'Project Delivery', value: 100, color: 'bg-primary/60' },
+  { label: 'Team Collaboration', value: 96, color: 'bg-primary/70' },
 ];
 
 /* ───────────── NEW: Skills data ───────────── */
