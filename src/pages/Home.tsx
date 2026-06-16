@@ -15,13 +15,14 @@ import { Link } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { useEffect, useRef, useState } from 'react';
 
-/*──────────────── Cursor Sparkles (canvas particle trail) ────────────────*/
 const CursorSparkles = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
-    const canvas = canvasRef.current!;
-    const ctx = canvas.getContext('2d')!;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
     let raf = 0;
     let running = true;
 
@@ -37,31 +38,27 @@ const CursorSparkles = () => {
     setSize();
     window.addEventListener('resize', setSize);
 
-    type P = {
-      x: number; y: number; vx: number; vy: number;
-      life: number; alpha: number; size: number; hue: number;
-    };
+    type P = { x: number; y: number; vx: number; vy: number; life: number; alpha: number; size: number; hue: number };
     const particles: P[] = [];
 
-    const spawn = (x: number, y: number, n = 10) => {
+    const spawn = (x: number, y: number, n = 8) => {
       for (let i = 0; i < n; i++) {
         const angle = Math.random() * Math.PI * 2;
         const speed = 0.6 + Math.random() * 1.2;
         particles.push({
-          x, y,
+          x,
+          y,
           vx: Math.cos(angle) * speed * 0.8,
           vy: Math.sin(angle) * speed * 0.8 - 0.6,
           life: 900 + Math.random() * 500,
           alpha: 1,
           size: 1.5 + Math.random() * 2.5,
-          hue: 205 + Math.random() * 40, // blue → cyan
+          hue: 205 + Math.random() * 40,
         });
       }
     };
 
-    const onMove = (e: MouseEvent) => {
-      spawn(e.clientX, e.clientY, 10);
-    };
+    const onMove = (e: MouseEvent) => spawn(e.clientX, e.clientY, 8);
     window.addEventListener('mousemove', onMove);
 
     let prev = performance.now();
@@ -81,7 +78,7 @@ const CursorSparkles = () => {
         }
         p.x += p.vx;
         p.y += p.vy;
-        p.vy += 0.01;            // gentle gravity
+        p.vy += 0.01;
         p.alpha = Math.max(0, p.life / 1000);
 
         ctx.save();
@@ -111,13 +108,7 @@ const CursorSparkles = () => {
     };
   }, []);
 
-  return (
-    <canvas
-      ref={canvasRef}
-      className="fixed inset-0 z-30 pointer-events-none"
-      aria-hidden="true"
-    />
-  );
+  return <canvas ref={canvasRef} className="fixed inset-0 z-30 pointer-events-none" aria-hidden="true" />;
 };
 
 /*──────────────── Brand Icons (tiny inline SVGs) ────────────────*/
@@ -495,8 +486,8 @@ export function Home() {
                 <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Button>
             </Link>
-         <a
-  href="/Kodni_Diyana_Final_CV.pdf"
+          <a
+        href="/diyaCV.pdf"
   target="_blank"
   rel="noopener noreferrer"
 >
