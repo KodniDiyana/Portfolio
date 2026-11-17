@@ -1,760 +1,2500 @@
-import { motion, useInView } from 'framer-motion';
+import { useEffect, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
+
+import {
+  motion,
+  useInView,
+  useReducedMotion,
+} from 'framer-motion';
+
 import {
   ArrowRight,
   Download,
   Sparkles,
   Code2,
   Server,
-  Database as DbIcon,
+  Database,
   PenTool,
   Layout,
   GitBranch,
   Github,
+  Mail,
+  ExternalLink,
+  CheckCircle2,
+  Layers,
+  Globe,
+  Terminal,
+  Figma,
+  ChevronDown,
+  Briefcase,
+  GraduationCap,
+  Monitor,
+  ShieldCheck,
+  MousePointer2,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { Button } from '../components/ui/button';
-import { useEffect, useRef, useState } from 'react';
 
-const CursorSparkles = () => {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+import { Link } from 'react-router-dom';
+import { useTheme } from '../contexts/ThemeContext';
+
+import profilePhoto from '../assets/myprofessional_pic.jpeg';
+
+/* =========================================================
+   TYPES
+========================================================= */
+
+type Colors = {
+  dark: boolean;
+  title: string;
+  body: string;
+  muted: string;
+  surface: string;
+  icon: string;
+  secondary: string;
+  separator: string;
+};
+
+/* =========================================================
+   ANIMATION CONFIGURATION
+========================================================= */
+
+const fade = {
+  hidden: {
+    opacity: 0,
+    y: 26,
+  },
+
+  show: {
+    opacity: 1,
+    y: 0,
+  },
+};
+
+const stagger = {
+  hidden: {},
+
+  show: {
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+/* =========================================================
+   LIGHT AND DARK MODE COLORS
+========================================================= */
+
+function useColors(): Colors {
+  const { theme } = useTheme();
+
+  const dark = theme === 'dark';
+
+  return {
+    dark,
+
+    title: dark
+      ? 'text-white'
+      : 'text-slate-900',
+
+    body: dark
+      ? 'text-slate-100'
+      : 'text-slate-700',
+
+    muted: dark
+      ? 'text-slate-300'
+      : 'text-slate-600',
+
+    surface: dark
+      ? `
+        border-sky-300/25
+        bg-gradient-to-br
+        from-[#2e5685]/90
+        to-[#203f69]/95
+        shadow-[0_18px_45px_rgba(6,24,52,0.24)]
+        hover:border-cyan-300/60
+        hover:shadow-[0_25px_55px_rgba(34,157,230,0.18)]
+      `
+      : `
+        border-blue-200
+        bg-gradient-to-br
+        from-white
+        to-[#eaf5ff]
+        shadow-[0_15px_40px_rgba(38,92,163,0.11)]
+        hover:border-sky-400
+        hover:shadow-[0_22px_50px_rgba(42,111,200,0.19)]
+      `,
+
+    icon: dark
+      ? `
+        bg-cyan-300/15
+        text-cyan-200
+        ring-1
+        ring-cyan-300/20
+      `
+      : `
+        bg-blue-100
+        text-blue-700
+        ring-1
+        ring-blue-200
+      `,
+
+    secondary: dark
+      ? `
+        border-white/25
+        bg-white/10
+        text-white
+        hover:bg-white/20
+      `
+      : `
+        border-blue-200
+        bg-white
+        text-blue-900
+        hover:bg-blue-50
+      `,
+
+    separator: dark
+      ? 'border-white/15'
+      : 'border-blue-100',
+  };
+}
+
+/* =========================================================
+   BLUE CURSOR SPARKLE ANIMATION
+========================================================= */
+
+function CursorSparkles({
+  dark,
+}: {
+  dark: boolean;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  const reduced = useReducedMotion();
 
   useEffect(() => {
+    if (
+      reduced ||
+      !window.matchMedia('(pointer: fine)').matches
+    ) {
+      return;
+    }
+
     const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    let raf = 0;
-    let running = true;
 
-    const setSize = () => {
-      const dpr = Math.max(1, window.devicePixelRatio || 1);
-      const { innerWidth: w, innerHeight: h } = window;
-      canvas.width = w * dpr;
-      canvas.height = h * dpr;
-      canvas.style.width = `${w}px`;
-      canvas.style.height = `${h}px`;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const ctx = canvas?.getContext('2d');
+
+    if (!canvas || !ctx) return;
+
+    type Particle = {
+      x: number;
+      y: number;
+      vx: number;
+      vy: number;
+      life: number;
+      maxLife: number;
+      radius: number;
     };
-    setSize();
-    window.addEventListener('resize', setSize);
 
-    type P = { x: number; y: number; vx: number; vy: number; life: number; alpha: number; size: number; hue: number };
-    const particles: P[] = [];
+    const particles: Particle[] = [];
 
-    const spawn = (x: number, y: number, n = 8) => {
-      for (let i = 0; i < n; i++) {
-        const angle = Math.random() * Math.PI * 2;
-        const speed = 0.6 + Math.random() * 1.2;
+    let raf = 0;
+
+    let lastSpawn = 0;
+
+    let lastFrame = performance.now();
+
+    let active = true;
+
+    /* Canvas Resize */
+
+    const resize = () => {
+      const ratio = Math.min(
+        window.devicePixelRatio || 1,
+        2
+      );
+
+      canvas.width = Math.round(
+        window.innerWidth * ratio
+      );
+
+      canvas.height = Math.round(
+        window.innerHeight * ratio
+      );
+
+      canvas.style.width =
+        `${window.innerWidth}px`;
+
+      canvas.style.height =
+        `${window.innerHeight}px`;
+
+      ctx.setTransform(
+        ratio,
+        0,
+        0,
+        ratio,
+        0,
+        0
+      );
+    };
+
+    /* Generate particles */
+
+    const move = (event: PointerEvent) => {
+      if (event.pointerType === 'touch') {
+        return;
+      }
+
+      const time = performance.now();
+
+      if (time - lastSpawn < 25) {
+        return;
+      }
+
+      lastSpawn = time;
+
+      for (let i = 0; i < 3; i++) {
+        const theta =
+          Math.random() * Math.PI * 2;
+
+        const speed =
+          0.25 + Math.random() * 0.85;
+
+        const life =
+          450 + Math.random() * 400;
+
         particles.push({
-          x,
-          y,
-          vx: Math.cos(angle) * speed * 0.8,
-          vy: Math.sin(angle) * speed * 0.8 - 0.6,
-          life: 900 + Math.random() * 500,
-          alpha: 1,
-          size: 1.5 + Math.random() * 2.5,
-          hue: 205 + Math.random() * 40,
+          x:
+            event.clientX +
+            (Math.random() - 0.5) * 10,
+
+          y:
+            event.clientY +
+            (Math.random() - 0.5) * 10,
+
+          vx:
+            Math.cos(theta) * speed,
+
+          vy:
+            Math.sin(theta) * speed - 0.3,
+
+          life,
+
+          maxLife: life,
+
+          radius:
+            1 + Math.random() * 2.4,
         });
+      }
+
+      if (particles.length > 90) {
+        particles.splice(
+          0,
+          particles.length - 90
+        );
       }
     };
 
-    const onMove = (e: MouseEvent) => spawn(e.clientX, e.clientY, 8);
-    window.addEventListener('mousemove', onMove);
+    /* Draw particles */
 
-    let prev = performance.now();
-    const loop = (t: number) => {
-      if (!running) return;
-      const dt = t - prev;
-      prev = t;
+    const render = (now: number) => {
+      if (!active) return;
 
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const delta = Math.min(
+        now - lastFrame,
+        40
+      );
 
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i];
-        p.life -= dt;
-        if (p.life <= 0) {
+      lastFrame = now;
+
+      ctx.clearRect(
+        0,
+        0,
+        window.innerWidth,
+        window.innerHeight
+      );
+
+      for (
+        let i = particles.length - 1;
+        i >= 0;
+        i--
+      ) {
+        const item = particles[i];
+
+        item.life -= delta;
+
+        if (item.life <= 0) {
           particles.splice(i, 1);
           continue;
         }
-        p.x += p.vx;
-        p.y += p.vy;
-        p.vy += 0.01;
-        p.alpha = Math.max(0, p.life / 1000);
 
-        ctx.save();
-        ctx.globalAlpha = p.alpha;
-        ctx.shadowColor = `hsla(${p.hue},100%,60%,${0.8 * p.alpha})`;
-        ctx.shadowBlur = 12;
+        item.x +=
+          (item.vx * delta) / 16;
 
-        const grd = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 3);
-        grd.addColorStop(0, `hsla(${p.hue},100%,70%,1)`);
-        grd.addColorStop(1, `hsla(${p.hue},100%,50%,0)`);
-        ctx.fillStyle = grd;
+        item.y +=
+          (item.vy * delta) / 16;
+
+        const opacity =
+          item.life / item.maxLife;
+
+        ctx.globalAlpha =
+          opacity * (dark ? 0.95 : 0.8);
+
+        ctx.fillStyle = dark
+          ? '#67e8f9'
+          : '#2563eb';
+
+        ctx.shadowColor = dark
+          ? '#38bdf8'
+          : '#60a5fa';
+
+        ctx.shadowBlur = 10;
+
         ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size * 3, 0, Math.PI * 2);
+
+        ctx.arc(
+          item.x,
+          item.y,
+          item.radius * opacity,
+          0,
+          Math.PI * 2
+        );
+
         ctx.fill();
-        ctx.restore();
       }
 
-      raf = requestAnimationFrame(loop);
+      ctx.globalAlpha = 1;
+
+      ctx.shadowBlur = 0;
+
+      raf = requestAnimationFrame(render);
     };
-    raf = requestAnimationFrame(loop);
+
+    resize();
+
+    window.addEventListener(
+      'resize',
+      resize
+    );
+
+    window.addEventListener(
+      'pointermove',
+      move,
+      { passive: true }
+    );
+
+    raf = requestAnimationFrame(render);
 
     return () => {
-      running = false;
+      active = false;
+
       cancelAnimationFrame(raf);
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('resize', setSize);
+
+      window.removeEventListener(
+        'resize',
+        resize
+      );
+
+      window.removeEventListener(
+        'pointermove',
+        move
+      );
     };
-  }, []);
+  }, [dark, reduced]);
 
-  return <canvas ref={canvasRef} className="fixed inset-0 z-30 pointer-events-none" aria-hidden="true" />;
-};
-
-/*──────────────── Brand Icons (tiny inline SVGs) ────────────────*/
-const BrandIcon = ({ name, className = 'h-4 w-4' }: { name: string; className?: string }) => {
-  switch (name) {
-    // ==== Frontend ====
-    case 'react':
-      return (
-        <svg viewBox="0 0 24 24" className={className} aria-label="React">
-          <g fill="none" stroke="currentColor" strokeWidth="1.5">
-            <circle cx="12" cy="12" r="2.2" />
-            <ellipse cx="12" cy="12" rx="10" ry="4.6" transform="rotate(60 12 12)" />
-            <ellipse cx="12" cy="12" rx="10" ry="4.6" transform="rotate(-60 12 12)" />
-            <ellipse cx="12" cy="12" rx="10" ry="4.6" />
-          </g>
-        </svg>
-      );
-    case 'ts':
-      return (
-        <svg viewBox="0 0 24 24" className={className} aria-label="TypeScript">
-          <rect x="2" y="3" width="20" height="18" rx="2" className="fill-current opacity-15" />
-          <path d="M6 9h5M8.5 9v7M14 9h6m-3 0v7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-        </svg>
-      );
-    case 'tailwind':
-      return (
-        <svg viewBox="0 0 24 24" className={className} aria-label="Tailwind">
-          <path
-            d="M12 6c-3 0-4 2-5 3 1-1 2-1 3 0 1 1 2 1 3 1 3 0 4-2 5-3-1 1-2 1-3 0-1-1-2-1-3-1Zm-5 9c1-1 2-1 3 0 1 1 2 1 3 1 3 0 4-2 5-3-1 1-2 1-3 0-1-1-2-1-3-1-3 0-4 2-5 3Z"
-            fill="currentColor"
-          />
-        </svg>
-      );
-    case 'next':
-      return (
-        <svg viewBox="0 0 24 24" className={className} aria-label="Next.js">
-          <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.6" fill="none" />
-          <path d="M7 9h5m-5 3h3m4-1 4 6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-        </svg>
-      );
-
-    // ==== Backend ====
-    case 'node':
-      return (
-        <svg viewBox="0 0 24 24" className={className} aria-label="Node.js">
-          <path d="M12 2 3 7v10l9 5 9-5V7l-9-5Z" fill="currentColor" className="opacity-15" />
-          <path d="M12 3.6 4.8 7.6v8.8L12 20.4l7.2-4V7.6L12 3.6Z" stroke="currentColor" strokeWidth="1.4" fill="none" />
-          <path d="M8 12c0 1.7 1.3 3 3 3h2v-2h-2a1 1 0 1 1 0-2h3V9h-3c-1.7 0-3 1.3-3 3Z" fill="currentColor" />
-        </svg>
-      );
-    case 'spring':
-      return (
-        <svg viewBox="0 0 24 24" className={className} aria-label="Spring Boot">
-          <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.6" fill="none" />
-          <path d="M7 15c2 2 8 2 10-3 0 0-2 1-4 0-2-.9-3.5-3-6-2 0 2 .5 3.3 0 5Z" fill="currentColor" />
-          <circle cx="12" cy="12" r="1.2" fill="currentColor" />
-        </svg>
-      );
-    case 'express':
-      return (
-        <svg viewBox="0 0 24 24" className={className} aria-label="Express.js">
-          <path d="M5 9v6m0 0 3-4m-3 4-3-4M13 9l3 6m0 0 3-6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-        </svg>
-      );
-    case 'rest':
-      return (
-        <svg viewBox="0 0 24 24" className={className} aria-label="REST APIs">
-          <rect x="3" y="6" width="7" height="12" rx="2" stroke="currentColor" strokeWidth="1.6" fill="none" />
-          <rect x="14" y="6" width="7" height="12" rx="2" stroke="currentColor" strokeWidth="1.6" fill="none" />
-          <path d="M10 12h4" stroke="currentColor" strokeWidth="1.6" />
-        </svg>
-      );
-
-    // ==== Databases ====
-    case 'mongodb':
-      return (
-        <svg viewBox="0 0 24 24" className={className} aria-label="MongoDB">
-          <path d="M12 3s-1 2-1 5 1.2 7.5 1 9.5c-.2 2-1 3-1 3s3-1 3-6.5S12 3 12 3Z" fill="currentColor" />
-          <path d="M12 2v6" stroke="currentColor" strokeWidth="1.4" />
-        </svg>
-      );
-    case 'postgres':
-      return (
-        <svg viewBox="0 0 24 24" className={className} aria-label="PostgreSQL">
-          <rect x="4" y="5" width="16" height="10" rx="3" stroke="currentColor" strokeWidth="1.6" fill="none" />
-          <path d="M8 15v1.5A2.5 2.5 0 0 0 10.5 19H13.5A2.5 2.5 0 0 0 16 16.5V15" stroke="currentColor" strokeWidth="1.6" />
-        </svg>
-      );
-    case 'mysql':
-      return (
-        <svg viewBox="0 0 24 24" className={className} aria-label="MySQL">
-          <ellipse cx="12" cy="7" rx="7" ry="3.5" stroke="currentColor" strokeWidth="1.6" fill="none" />
-          <path d="M5 7v6c0 1.9 3.1 3.5 7 3.5s7-1.6 7-3.5V7" stroke="currentColor" strokeWidth="1.6" fill="none" />
-        </svg>
-      );
-    case 'redis':
-      return (
-        <svg viewBox="0 0 24 24" className={className} aria-label="Redis">
-          <path d="M4 9 12 6l8 3-8 3-8-3Z" className="fill-current opacity-20" />
-          <path d="M4 12l8 3 8-3M4 9l8 3 8-3" stroke="currentColor" strokeWidth="1.4" fill="none" />
-        </svg>
-      );
-
-    // ==== Tools ====
-    case 'git':
-      return (
-        <svg viewBox="0 0 24 24" className={className} aria-label="Git & GitHub">
-          <path d="M4 12 12 4l8 8-8 8-8-8Z" stroke="currentColor" strokeWidth="1.6" fill="none" />
-          <circle cx="12" cy="8.5" r="1.3" fill="currentColor" />
-          <circle cx="12" cy="12" r="1.3" fill="currentColor" />
-          <circle cx="12" cy="15.5" r="1.3" fill="currentColor" />
-          <path d="M12 8.5v7" stroke="currentColor" strokeWidth="1.2" />
-        </svg>
-      );
-    case 'docker':
-      return (
-        <svg viewBox="0 0 24 24" className={className} aria-label="Docker">
-          <rect x="3" y="11" width="4" height="3" rx="0.5" className="fill-current opacity-20" />
-          <rect x="7.5" y="8" width="4" height="3" rx="0.5" className="fill-current opacity-20" />
-          <rect x="12" y="11" width="4" height="3" rx="0.5" className="fill-current opacity-20" />
-          <rect x="7.5" y="11" width="4" height="3" rx="0.5" className="fill-current opacity-20" />
-          <path d="M2.5 15.5c1 2.5 3.5 4 7.5 4h3.5c6 0 6.5-3 7-4.5-1 .5-2 .2-3-.7-1 1.2-2.4 1.2-3.5.7H8" stroke="currentColor" strokeWidth="1.4" fill="none" />
-        </svg>
-      );
-    case 'vscode':
-      return (
-        <svg viewBox="0 0 24 24" className={className} aria-label="VS Code">
-          <path d="M15 4 6 12l9 8 3-1V5l-3-1Z" stroke="currentColor" strokeWidth="1.6" fill="none" />
-          <path d="m6 12 6 5V7l-6 5Z" className="fill-current opacity-20" />
-        </svg>
-      );
-    case 'postman':
-      return (
-        <svg viewBox="0 0 24 24" className={className} aria-label="Postman">
-          <circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="1.6" fill="none" />
-          <path d="M8.5 12h7M12 8.5v7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-        </svg>
-      );
-
-    default:
-      return <span className={className} />;
+  if (reduced) {
+    return null;
   }
-};
 
-/*──────────── Count-up hook ───────────*/
-const useCountUp = (target: number, active: boolean, duration = 900) => {
-  const [value, setValue] = useState(0);
-  useEffect(() => {
-    if (!active) return;
-    let raf = 0;
-    let start: number | null = null;
-    const step = (t: number) => {
-      if (start === null) start = t;
-      const p = Math.min((t - start) / duration, 1);
-      setValue(Math.round(target * (p < 0.7 ? p / 0.7 : 1 - (1 - p) * 0.3)));
-      if (p < 1) raf = requestAnimationFrame(step);
-    };
-    raf = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(raf);
-  }, [target, active, duration]);
-  return value;
-};
+  return (
+    <canvas
+      ref={canvasRef}
+      aria-hidden="true"
+      className="
+        pointer-events-none
+        fixed
+        inset-0
+        z-50
+      "
+    />
+  );
+}
 
-/*──────────── Animated “hook” bar (overshoot → settle) ───────────*/
-const AnimatedBar = ({ percent, active }: { percent: number; active: boolean }) => (
-  <motion.div
-    className="h-full rounded-full bg-gradient-to-r from-blue-600 via-cyan-500 to-teal-500 group-hover:shadow-[0_0_18px_rgba(34,211,238,0.45)]"
-    initial={{ width: '0%' }}
-    animate={active ? { width: [`0%`, `${percent + 8}%`, `${percent}%`] } : { width: '0%' }}
-    transition={{ duration: 1.2, times: [0, 0.7, 1], ease: ['easeOut', 'easeInOut'] }}
-  />
-);
+/* =========================================================
+   ANIMATED BACKGROUND
+========================================================= */
 
-/*──────────── One skill row (with hover glow + count-up) ───────────*/
-const SkillRow = ({
-  label,
-  percent,
-  icon,
+function Background({
+  dark,
 }: {
-  label: string;
-  percent: number;
-  icon: React.ReactNode;
-}) => {
-  const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { once: true, amount: 0.6 });
-  const value = useCountUp(percent, inView);
+  dark: boolean;
+}) {
+  const reduced = useReducedMotion();
 
+  return (
+    <div
+      aria-hidden="true"
+      className="
+        pointer-events-none
+        absolute
+        inset-0
+        overflow-hidden
+      "
+    >
+      {/* Main Background */}
+
+      <div
+        className={`
+          absolute inset-0
+
+          ${
+            dark
+              ? 'bg-gradient-to-br from-[#193a63] via-[#1d4671] to-[#122d50]'
+              : 'bg-gradient-to-br from-[#f4f9ff] via-[#e9f3ff] to-[#deedff]'
+          }
+        `}
+      />
+
+      {/* Left Glow */}
+
+      <motion.div
+        className={`
+          absolute
+          -left-40
+          -top-32
+          h-[540px]
+          w-[540px]
+          rounded-full
+          blur-[110px]
+
+          ${
+            dark
+              ? 'bg-blue-400/15'
+              : 'bg-blue-300/35'
+          }
+        `}
+        animate={
+          reduced
+            ? undefined
+            : {
+                x: [0, 40, 0],
+                y: [0, -30, 0],
+              }
+        }
+        transition={{
+          duration: 19,
+          repeat: Infinity,
+          ease: 'easeInOut',
+        }}
+      />
+
+      {/* Right Glow */}
+
+      <motion.div
+        className={`
+          absolute
+          right-[-160px]
+          top-[18%]
+          h-[600px]
+          w-[600px]
+          rounded-full
+          blur-[120px]
+
+          ${
+            dark
+              ? 'bg-cyan-400/10'
+              : 'bg-cyan-300/30'
+          }
+        `}
+        animate={
+          reduced
+            ? undefined
+            : {
+                x: [0, -35, 0],
+                y: [0, 45, 0],
+              }
+        }
+        transition={{
+          duration: 22,
+          repeat: Infinity,
+          ease: 'easeInOut',
+        }}
+      />
+
+      {/* Subtle Grid */}
+
+      <div
+        className="
+          absolute
+          inset-0
+          opacity-[0.035]
+
+          [background-image:linear-gradient(#3b82f6_1px,transparent_1px),linear-gradient(90deg,#3b82f6_1px,transparent_1px)]
+
+          [background-size:68px_68px]
+        "
+      />
+    </div>
+  );
+}
+
+/* =========================================================
+   SECTION HEADING
+========================================================= */
+
+function Heading({
+  eyebrow,
+  first,
+  accent,
+  description,
+  c,
+}: {
+  eyebrow: string;
+  first: string;
+  accent: string;
+  description: string;
+  c: Colors;
+}) {
   return (
     <motion.div
-      ref={ref}
-      className="group relative space-y-2 rounded-lg p-2 -m-2"
-      initial={{ opacity: 0, y: 12 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.6 }}
-      transition={{ duration: 0.4 }}
+      initial="hidden"
+      whileInView="show"
+      viewport={{
+        once: true,
+        amount: 0.2,
+      }}
+      variants={stagger}
+      className="mb-12 text-center"
     >
-      <div className="pointer-events-none absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-r from-white/0 via-white/5 to-white/0" />
-      <div className="flex items-center justify-between text-sm relative">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <span className="text-primary">{icon}</span>
-          <span className="font-medium text-foreground">{label}</span>
-        </div>
-        <span className="tabular-nums text-foreground/80">{value}%</span>
-      </div>
-      <div className="h-2 rounded-full bg-white/10 overflow-hidden relative">
-        <AnimatedBar percent={percent} active={inView} />
-      </div>
+      {/* Section Badge */}
+
+      <motion.span
+        variants={fade}
+        className={`
+          mb-5
+          inline-flex
+          items-center
+          gap-2
+          rounded-full
+          border
+          px-4
+          py-2
+          text-sm
+          font-semibold
+          sm:text-base
+
+          ${
+            c.dark
+              ? 'border-cyan-300/25 bg-cyan-300/10 text-cyan-200'
+              : 'border-blue-200 bg-blue-100 text-blue-700'
+          }
+        `}
+      >
+        <Sparkles size={16} />
+
+        {eyebrow}
+      </motion.span>
+
+      {/* Heading */}
+
+      <motion.h2
+        variants={fade}
+        className={`
+          text-4xl
+          font-extrabold
+          tracking-tight
+          sm:text-5xl
+
+          ${c.title}
+        `}
+      >
+        {first}{' '}
+
+        <span
+          className="
+            bg-gradient-to-r
+            from-blue-500
+            via-sky-400
+            to-cyan-500
+            bg-clip-text
+            text-transparent
+          "
+        >
+          {accent}
+        </span>
+      </motion.h2>
+
+      {/* Description */}
+
+      <motion.p
+        variants={fade}
+        className={`
+          mx-auto
+          mt-5
+          max-w-3xl
+          text-lg
+          leading-relaxed
+          sm:text-xl
+
+          ${c.muted}
+        `}
+      >
+        {description}
+      </motion.p>
     </motion.div>
   );
-};
+}
 
-export function Home() {
-  // ===== Helpers for tilt + shine =====
-  const applyTilt = (e: React.MouseEvent<HTMLDivElement>, cardRef: React.RefObject<HTMLDivElement>) => {
-    const el = cardRef.current;
-    if (!el) return;
-    const r = el.getBoundingClientRect();
-    const px = e.clientX - r.left;
-    const py = e.clientY - r.top;
-    const cx = r.width / 2;
-    const cy = r.height / 2;
-    const rotateX = ((py - cy) / 20) * -1;
-    const rotateY = ((px - cx) / 20);
-    el.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.02)`;
-  };
+/* =========================================================
+   ANIMATED COUNTER
+========================================================= */
 
-  const resetTilt = (cardRef: React.RefObject<HTMLDivElement>) => {
-    const el = cardRef.current;
-    if (el) el.style.transform = 'rotateX(0deg) rotateY(0deg) scale(1)';
-  };
+function useCounter(
+  target: number,
+  active: boolean
+) {
+  const [number, setNumber] = useState(0);
 
-  const applyShine = (
-    e: React.MouseEvent<HTMLDivElement>,
-    cardRef: React.RefObject<HTMLDivElement>,
-    shineRef: React.RefObject<HTMLDivElement>
-  ) => {
-    const card = cardRef.current, shine = shineRef.current;
-    if (!card || !shine) return;
-    const r = card.getBoundingClientRect();
-    const x = e.clientX - r.left;
-    const y = e.clientY - r.top;
-    const xp = (x / r.width) * 100;
-    const yp = (y / r.height) * 100;
+  const reduced = useReducedMotion();
 
-    shine.style.background = `
-      radial-gradient(200px 200px at ${xp}% ${yp}%, rgba(255,255,255,0.25), rgba(255,255,255,0) 70%),
-      linear-gradient(120deg, rgba(255,255,255,0.12), rgba(255,255,255,0))
-    `;
-    shine.style.opacity = '1';
-  };
+  useEffect(() => {
+    if (!active) return;
 
-  const hideShine = (shineRef: React.RefObject<HTMLDivElement>) => {
-    const shine = shineRef.current;
-    if (shine) shine.style.opacity = '0';
-  };
+    if (reduced) {
+      setNumber(target);
+      return;
+    }
 
-  const card1Ref = useRef<HTMLDivElement>(null);
-  const card2Ref = useRef<HTMLDivElement>(null);
-  const shine1Ref = useRef<HTMLDivElement>(null);
-  const shine2Ref = useRef<HTMLDivElement>(null);
+    let frame = 0;
 
-  // Frontend / Backend tilt + shine
-  const feRef = useRef<HTMLDivElement>(null);
-  const beRef = useRef<HTMLDivElement>(null);
-  const shineFeRef = useRef<HTMLDivElement>(null);
-  const shineBeRef = useRef<HTMLDivElement>(null);
+    let start: number | null = null;
 
-  // Database / Tools tilt + shine
-  const dbRef = useRef<HTMLDivElement>(null);
-  const toolsRef = useRef<HTMLDivElement>(null);
-  const shineDbRef = useRef<HTMLDivElement>(null);
-  const shineToolsRef = useRef<HTMLDivElement>(null);
+    const tick = (time: number) => {
+      if (start === null) {
+        start = time;
+      }
 
-  // ===== Small StatCard (first-image design) =====
-  const StatCard = ({
-    icon,
-    target,
-    label,
-    delay = 0,
-  }: {
-    icon: React.ReactNode;
-    target: number;
-    label: string;
-    delay?: number;
-  }) => {
-    const ref = useRef<HTMLDivElement>(null);
-    const inView = useInView(ref, { once: true, amount: 0.5 });
-    const value = useCountUp(target, inView, 1000);
+      const progress = Math.min(
+        (time - start) / 1250,
+        1
+      );
 
-    return (
-      <motion.div
-        ref={ref}
-        initial={{ opacity: 0, y: 16, scale: 0.98 }}
-        whileInView={{ opacity: 1, y: 0, scale: 1 }}
-        viewport={{ once: true }}
-        transition={{ delay, duration: 0.5 }}
-        className="relative overflow-hidden rounded-2xl px-6 py-8 bg-gradient-to-b from-white/8 to-white/[0.03] border border-white/10 backdrop-blur-xl
-                   shadow-[0_10px_40px_rgba(0,0,0,0.25)] hover:shadow-[0_18px_60px_rgba(59,130,246,0.25)]
-                   flex flex-col items-center text-center"
-      >
-        <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(120px_80px_at_50%_0%,rgba(255,255,255,0.12),transparent)]" />
-        <div className="mb-4 text-primary">{icon}</div>
-        <div className="text-4xl font-extrabold tracking-tight text-foreground">
-          {value}
-          <span>+</span>
-        </div>
-        <div className="mt-2 text-sm text-muted-foreground">{label}</div>
-      </motion.div>
-    );
-  };
+      setNumber(
+        Math.round(
+          target *
+            (1 - (1 - progress) ** 3)
+        )
+      );
+
+      if (progress < 1) {
+        frame =
+          requestAnimationFrame(tick);
+      }
+    };
+
+    frame =
+      requestAnimationFrame(tick);
+
+    return () => {
+      cancelAnimationFrame(frame);
+    };
+  }, [target, active, reduced]);
+
+  return number;
+}
+
+/* =========================================================
+   PROFESSIONAL STATISTICS CARD
+========================================================= */
+
+function StatCard({
+  icon,
+  value,
+  label,
+  index,
+  c,
+}: {
+  icon: ReactNode;
+  value: number;
+  label: string;
+  index: number;
+  c: Colors;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  const visible = useInView(ref, {
+    once: true,
+    amount: 0.3,
+  });
+
+  const count = useCounter(
+    value,
+    visible
+  );
+
+  const reduced = useReducedMotion();
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8">
-      {/* sparkle layer */}
-      <CursorSparkles />
+    <motion.article
+      ref={ref}
+      initial={{
+        opacity: 0,
+        y: 24,
+      }}
+      whileInView={{
+        opacity: 1,
+        y: 0,
+      }}
+      viewport={{
+        once: true,
+      }}
+      transition={{
+        duration: 0.55,
+        delay: index * 0.09,
+      }}
+      whileHover={
+        reduced
+          ? undefined
+          : {
+              y: -8,
+              scale: 1.02,
+            }
+      }
+      className={`
+        group
+        relative
+        overflow-hidden
+        rounded-3xl
+        border
+        px-4
+        py-8
+        text-center
+        transition-[border-color,box-shadow]
+        duration-300
+        sm:px-6
+        sm:py-9
 
-      <div className="max-w-5xl mx-auto text-center">
-        {/* ===== HERO (DISPLAY) ===== */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="mb-6"
+        ${c.surface}
+      `}
+    >
+      {/* Top Accent */}
+
+      <div
+        className="
+          absolute
+          inset-x-8
+          top-0
+          h-[3px]
+          bg-gradient-to-r
+          from-transparent
+          via-cyan-400
+          to-transparent
+        "
+      />
+
+      {/* Glow Effect */}
+
+      <div
+        className="
+          pointer-events-none
+          absolute
+          -right-12
+          -top-12
+          h-36
+          w-36
+          rounded-full
+          bg-cyan-300/10
+          blur-2xl
+          transition-transform
+          duration-500
+          group-hover:scale-150
+        "
+      />
+
+      {/* Icon */}
+
+      <div
+        className={`
+          relative
+          mx-auto
+          mb-5
+          flex
+          h-16
+          w-16
+          items-center
+          justify-center
+          rounded-2xl
+          transition-transform
+          duration-300
+          group-hover:scale-110
+
+          ${c.icon}
+        `}
+      >
+        {icon}
+      </div>
+
+      {/* Counter */}
+
+      <div
+        className={`
+          relative
+          text-4xl
+          font-extrabold
+          sm:text-[43px]
+
+          ${c.title}
+        `}
+      >
+        {count}+
+      </div>
+
+      {/* Label */}
+
+      <p
+        className={`
+          relative
+          mt-2
+          text-base
+          font-semibold
+          sm:text-lg
+
+          ${c.muted}
+        `}
+      >
+        {label}
+      </p>
+    </motion.article>
+  );
+}
+
+/* =========================================================
+   ABOUT FEATURE ITEM
+========================================================= */
+
+function Feature({
+  icon,
+  title,
+  description,
+  c,
+}: {
+  icon: ReactNode;
+  title: string;
+  description: string;
+  c: Colors;
+}) {
+  return (
+    <div
+      className={`
+        group
+        flex
+        items-start
+        gap-4
+        rounded-2xl
+        border
+        p-4
+        transition-colors
+        duration-300
+
+        ${
+          c.dark
+            ? 'border-white/10 bg-white/[0.045] hover:bg-white/[0.09]'
+            : 'border-blue-100 bg-blue-50/70 hover:bg-blue-100/70'
+        }
+      `}
+    >
+      <span
+        className={`
+          flex
+          h-12
+          w-12
+          shrink-0
+          items-center
+          justify-center
+          rounded-xl
+
+          ${c.icon}
+        `}
+      >
+        {icon}
+      </span>
+
+      <div>
+        <h4
+          className={`
+            text-lg
+            font-bold
+
+            ${c.title}
+          `}
         >
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
-            className="inline-flex items-center space-x-2 px-4 py-2 rounded-full bg-primary/10 text-primary mb-8"
-          >
-            <Sparkles className="w-4 h-4" />
-            <span className="text-sm font-medium">Available for opportunities</span>
-          </motion.div>
+          {title}
+        </h4>
 
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.5 }}
-            className="text-5xl sm:text-6xl lg:text-7xl font-bold mb-6 leading-tight"
-          >
-            Hello, I'm{' '}
-            <span className="bg-gradient-to-r from-blue-600 via-cyan-500 to-teal-500 bg-clip-text text-transparent">
-              Kodni Diyana
-            </span>
-          </motion.h1>
+        <p
+          className={`
+            mt-1
+            text-base
+            leading-relaxed
 
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.5 }}
-            className="text-xl sm:text-2xl text-muted-foreground mb-4"
-          >
-            Full Stack Developer & UI/UX Enthusiast
-          </motion.p>
-
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5, duration: 0.5 }}
-            className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto mb-12"
-          >
-            Crafting beautiful, functional web experiences with modern technologies.
-            Passionate about creating intuitive interfaces and scalable solutions.
-          </motion.p>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6, duration: 0.5 }}
-            className="flex flex-col sm:flex-row items-center justify-center gap-4"
-          >
-            <Link to="/projects">
-              <Button size="lg" className="group">
-                View Projects
-                <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </Button>
-            </Link>
-          <a
-        href="/diyaCV.pdf"
-  target="_blank"
-  rel="noopener noreferrer"
->
-  <Button size="lg" variant="outline" className="group">
-    <Download className="mr-2 w-4 h-4 group-hover:translate-y-1 transition-transform" />
-    Download CV
-  </Button>
-</a>
-          </motion.div>
-        </motion.div>
-
-        {/* ===== STATS — first image design ===== */}
-        <section className="mt-16">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <StatCard icon={<Code2 className="h-6 w-6" />} target={2} label="Years of Experience" />
-            <StatCard icon={<GitBranch className="h-6 w-6" />} target={10} label="Projects Completed" delay={0.05} />
-            <StatCard icon={<Server className="h-6 w-6" />} target={20} label="Technologies Mastered" delay={0.1} />
-            <StatCard icon={<Github className="h-6 w-6" />} target={100} label="GitHub Contributions" delay={0.15} />
-          </div>
-        </section>
-
-        {/* ===== ABOUT ME (glass cards with tilt + shine) ===== */}
-        <motion.section
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.0, duration: 0.6 }}
-          className="mt-24 text-left"
+            ${c.muted}
+          `}
         >
-          <h2 className="text-4xl sm:text-5xl font-extrabold text-center mb-4">About Me</h2>
-          <p className="text-center text-muted-foreground max-w-3xl mx-auto mb-12">
-            Passionate IT specialized with a growing focus on modern web technologies and user-centered design.
-          </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Card 1 */}
-            <div
-              ref={card1Ref}
-              onMouseMove={(e) => { applyTilt(e, card1Ref); applyShine(e, card1Ref, shine1Ref); }}
-              onMouseLeave={() => { resetTilt(card1Ref); hideShine(shine1Ref); }}
-              className="transition-transform duration-300 transform-gpu relative overflow-hidden rounded-2xl p-6 sm:p-8
-              bg-[radial-gradient(ellipse_at_top,_rgba(59,130,246,0.15),transparent_60%)]
-              bg-gradient-to-b from-white/10 to-white/[0.04] border border-white/10 backdrop-blur-xl
-              shadow-[0_10px_40px_rgba(0,0,0,0.25)] hover:shadow-[0_20px_60px_rgba(59,130,246,0.25)]"
-            >
-              {/* Shine layer */}
-              <div
-                ref={shine1Ref}
-                className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-150 rounded-2xl mix-blend-screen"
-                style={{ background: 'none' }}
-              />
-              <h3 className="text-2xl font-semibold mb-4">Technical Background</h3>
-              <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
-                Currently pursuing a Bachelor’s degree in Information Technology (3<sup>rd</sup> year, 1<sup>st</sup> semester).
-                Building foundations in programming and web technologies while practicing with{' '}
-                <strong>C++, PHP, HTML, CSS,</strong> and <strong>JavaScript</strong>.
-              </p>
-              <ul className="mt-6 space-y-3 text-sm sm:text-base">
-                <li className="flex items-start gap-3">
-                  <Code2 className="mt-0.5 h-5 w-5 text-primary" />
-                  <span>Front-end foundations with semantic HTML5 and modern CSS.</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Server className="mt-0.5 h-5 w-5 text-primary" />
-                  <span>Intro to back-end concepts using Node.js & PHP.</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <DbIcon className="mt-0.5 h-5 w-5 text-primary" />
-                  <span>Basic database design and SQL with MySQL.</span>
-                </li>
-              </ul>
-            </div>
-
-            {/* Card 2 */}
-            <div
-              ref={card2Ref}
-              onMouseMove={(e) => { applyTilt(e, card2Ref); applyShine(e, card2Ref, shine2Ref); }}
-              onMouseLeave={() => { resetTilt(card2Ref); hideShine(shine2Ref); }}
-              className="transition-transform duration-300 transform-gpu relative overflow-hidden rounded-2xl p-6 sm:p-8
-              bg-[radial-gradient(ellipse_at_top,_rgba(59,130,246,0.15),transparent_60%)]
-              bg-gradient-to-b from-white/10 to-white/[0.04] border border-white/10 backdrop-blur-xl
-              shadow-[0_10px_40px_rgba(0,0,0,0.25)] hover:shadow-[0_20px_60px_rgba(59,130,246,0.25)]"
-            >
-              {/* Shine layer */}
-              <div
-                ref={shine2Ref}
-                className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-150 rounded-2xl mix-blend-screen"
-                style={{ background: 'none' }}
-              />
-              <h3 className="text-2xl font-semibold mb-4">What I Do</h3>
-              <div className="space-y-5">
-                <div className="flex items-start gap-3">
-                  <Layout className="mt-0.5 h-5 w-5 text-primary" />
-                  <div>
-                    <p className="font-semibold">Frontend Development</p>
-                    <p className="text-sm text-muted-foreground">
-                      Building responsive, accessible UIs with HTML, CSS and JavaScript.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <PenTool className="mt-0.5 h-5 w-5 text-primary" />
-                  <div>
-                    <p className="font-semibold">UI/UX Design</p>
-                    <p className="text-sm text-muted-foreground">
-                      Designing clean, user-focused layouts with wireframes and mockups.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <Server className="mt-0.5 h-5 w-5 text-primary" />
-                  <div>
-                    <p className="font-semibold">Backend Basics</p>
-                    <p className="text-sm text-muted-foreground">
-                      Learning RESTful API logic with Node.js & PHP.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <DbIcon className="mt-0.5 h-5 w-5 text-primary" />
-                  <div>
-                    <p className="font-semibold">Database Design</p>
-                    <p className="text-sm text-muted-foreground">
-                      Practicing SQL schema design and database structure with MySQL.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </motion.section>
-
-        {/* ===== TECH STACK ===== */}
-        <motion.section
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-100px' }}
-          transition={{ duration: 0.6 }}
-          className="mt-24"
-        >
-          <h2 className="text-4xl sm:text-5xl font-extrabold text-center mb-3">Tech Stack</h2>
-          <p className="text-center text-muted-foreground mb-12">
-            Technologies and tools I work with
-          </p>
-
-          {/* Frontend / Backend — with tilt + shine */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-left">
-            {/* Frontend */}
-            <div
-              ref={feRef}
-              onMouseMove={(e) => { applyTilt(e, feRef); applyShine(e, feRef, shineFeRef); }}
-              onMouseLeave={() => { resetTilt(feRef); hideShine(shineFeRef); }}
-              className="transition-transform duration-300 transform-gpu relative overflow-hidden rounded-2xl p-6 sm:p-8 bg-gradient-to-b from-white/10 to-white/[0.04] border border-white/10 backdrop-blur-xl shadow-[0_10px_40px_rgba(0,0,0,0.25)] hover:shadow-[0_20px_60px_rgba(34,211,238,0.25)]"
-            >
-              <div
-                ref={shineFeRef}
-                className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-150 rounded-2xl mix-blend-screen"
-                style={{ background: 'none' }}
-              />
-              <div className="absolute -top-20 -left-20 h-64 w-64 rounded-full bg-blue-500/10 blur-3xl" />
-              <div className="relative">
-                <div className="flex items-center gap-3 mb-6">
-                  <Code2 className="h-5 w-5 text-primary" />
-                  <h3 className="text-2xl font-semibold">Frontend</h3>
-                </div>
-                <div className="space-y-5">
-                  <SkillRow label="React.js" percent={90} icon={<BrandIcon name="react" />} />
-                  <SkillRow label="TypeScript" percent={85} icon={<BrandIcon name="ts" />} />
-                  <SkillRow label="Tailwind CSS" percent={90} icon={<BrandIcon name="tailwind" />} />
-                  <SkillRow label="Next.js" percent={80} icon={<BrandIcon name="next" />} />
-                </div>
-              </div>
-            </div>
-
-            {/* Backend */}
-            <div
-              ref={beRef}
-              onMouseMove={(e) => { applyTilt(e, beRef); applyShine(e, beRef, shineBeRef); }}
-              onMouseLeave={() => { resetTilt(beRef); hideShine(shineBeRef); }}
-              className="transition-transform duration-300 transform-gpu relative overflow-hidden rounded-2xl p-6 sm:p-8 bg-gradient-to-b from-white/10 to-white/[0.04] border border-white/10 backdrop-blur-xl shadow-[0_10px_40px_rgba(0,0,0,0.25)] hover:shadow-[0_20px_60px_rgba(34,211,238,0.25)]"
-            >
-              <div
-                ref={shineBeRef}
-                className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-150 rounded-2xl mix-blend-screen"
-                style={{ background: 'none' }}
-              />
-              <div className="absolute -top-20 -right-20 h-64 w-64 rounded-full bg-teal-500/10 blur-3xl" />
-              <div className="relative">
-                <div className="flex items-center gap-3 mb-6">
-                  <Server className="h-5 w-5 text-primary" />
-                  <h3 className="text-2xl font-semibold">Backend</h3>
-                </div>
-                <div className="space-y-5">
-                  <SkillRow label="Node.js" percent={85} icon={<BrandIcon name="node" />} />
-                  <SkillRow label="Spring Boot" percent={80} icon={<BrandIcon name="spring" />} />
-                  <SkillRow label="Express.js" percent={85} icon={<BrandIcon name="express" />} />
-                  <SkillRow label="REST APIs" percent={90} icon={<BrandIcon name="rest" />} />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Database / Tools — with tilt + shine */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-left mt-10">
-            {/* Database */}
-            <div
-              ref={dbRef}
-              onMouseMove={(e) => { applyTilt(e, dbRef); applyShine(e, dbRef, shineDbRef); }}
-              onMouseLeave={() => { resetTilt(dbRef); hideShine(shineDbRef); }}
-              className="transition-transform duration-300 transform-gpu relative overflow-hidden rounded-2xl p-6 sm:p-8
-              bg-gradient-to-b from-white/10 to-white/[0.04] border border-white/10 backdrop-blur-xl
-              shadow-[0_10px_40px_rgba(0,0,0,0.25)] hover:shadow-[0_20px_60px_rgba(34,211,238,0.25)]"
-            >
-              <div
-                ref={shineDbRef}
-                className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-150 rounded-2xl mix-blend-screen"
-                style={{ background: 'none' }}
-              />
-              <div className="absolute -top-20 -left-20 h-64 w-64 rounded-full bg-cyan-500/10 blur-3xl" />
-              <div className="relative">
-                <div className="flex items-center gap-3 mb-6">
-                  <DbIcon className="h-5 w-5 text-primary" />
-                  <h3 className="text-2xl font-semibold">Database</h3>
-                </div>
-
-                <div className="space-y-5">
-                  <SkillRow label="MongoDB" percent={85} icon={<BrandIcon name="mongodb" />} />
-                
-                  <SkillRow label="MySQL" percent={75} icon={<BrandIcon name="mysql" />} />
-                  
-                </div>
-              </div>
-            </div>
-
-            {/* Tools */}
-            <div
-              ref={toolsRef}
-              onMouseMove={(e) => { applyTilt(e, toolsRef); applyShine(e, toolsRef, shineToolsRef); }}
-              onMouseLeave={() => { resetTilt(toolsRef); hideShine(shineToolsRef); }}
-              className="transition-transform duration-300 transform-gpu relative overflow-hidden rounded-2xl p-6 sm:p-8
-              bg-gradient-to-b from-white/10 to-white/[0.04] border border-white/10 backdrop-blur-xl
-              shadow-[0_10px_40px_rgba(0,0,0,0.25)] hover:shadow-[0_20px_60px_rgba(34,211,238,0.25)]"
-            >
-              <div
-                ref={shineToolsRef}
-                className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-150 rounded-2xl mix-blend-screen"
-                style={{ background: 'none' }}
-              />
-              <div className="absolute -top-20 -right-20 h-64 w-64 rounded-full bg-indigo-500/10 blur-3xl" />
-              <div className="relative">
-                <div className="flex items-center gap-3 mb-6">
-                  <Code2 className="h-5 w-5 text-primary" />
-                  <h3 className="text-2xl font-semibold">Tools</h3>
-                </div>
-
-                <div className="space-y-5">
-                  <SkillRow label="Git & GitHub" percent={90} icon={<BrandIcon name="git" />} />
-                  <SkillRow label="VS Code" percent={95} icon={<BrandIcon name="vscode" />} />
-                  <SkillRow label="Postman" percent={85} icon={<BrandIcon name="postman" />} />
-                </div>
-              </div>
-            </div>
-          </div>
-        </motion.section>
+          {description}
+        </p>
       </div>
     </div>
   );
 }
+
+/* =========================================================
+   REDESIGNED ABOUT CARD
+========================================================= */
+
+function AboutCard({
+  icon,
+  title,
+  summary,
+  children,
+  c,
+  delay = 0,
+}: {
+  icon: ReactNode;
+  title: string;
+  summary: string;
+  children: ReactNode;
+  c: Colors;
+  delay?: number;
+}) {
+  const reduced = useReducedMotion();
+
+  return (
+    <motion.article
+      initial={{
+        opacity: 0,
+        y: 26,
+      }}
+      whileInView={{
+        opacity: 1,
+        y: 0,
+      }}
+      viewport={{
+        once: true,
+        amount: 0.15,
+      }}
+      transition={{
+        duration: 0.55,
+        delay,
+      }}
+      whileHover={
+        reduced
+          ? undefined
+          : {
+              y: -5,
+            }
+      }
+      className={`
+        relative
+        overflow-hidden
+        rounded-3xl
+        border
+        p-6
+        transition-[border-color,box-shadow]
+        duration-300
+        sm:p-8
+
+        ${c.surface}
+      `}
+    >
+      {/* Accent Line */}
+
+      <div
+        className="
+          absolute
+          left-0
+          top-0
+          h-1
+          w-full
+          bg-gradient-to-r
+          from-blue-500
+          via-cyan-400
+          to-transparent
+          opacity-70
+        "
+      />
+
+      {/* Heading */}
+
+      <div
+        className="
+          mb-5
+          flex
+          items-center
+          gap-4
+        "
+      >
+        <span
+          className={`
+            flex
+            h-14
+            w-14
+            shrink-0
+            items-center
+            justify-center
+            rounded-2xl
+
+            ${c.icon}
+          `}
+        >
+          {icon}
+        </span>
+
+        <h3
+          className={`
+            text-2xl
+            font-bold
+            sm:text-[27px]
+
+            ${c.title}
+          `}
+        >
+          {title}
+        </h3>
+      </div>
+
+      {/* Summary */}
+
+      <p
+        className={`
+          mb-6
+          text-base
+          leading-[1.85]
+          sm:text-lg
+
+          ${c.body}
+        `}
+      >
+        {summary}
+      </p>
+
+      {/* Feature Blocks */}
+
+      <div className="space-y-3">
+        {children}
+      </div>
+    </motion.article>
+  );
+}
+
+/* =========================================================
+   PROFESSIONAL TECH STACK CARD
+========================================================= */
+
+function TechCard({
+  icon,
+  title,
+  subtitle,
+  skills,
+  index,
+  c,
+}: {
+  icon: ReactNode;
+  title: string;
+  subtitle: string;
+  skills: string[];
+  index: number;
+  c: Colors;
+}) {
+  const reduced = useReducedMotion();
+
+  return (
+    <motion.article
+      initial={{
+        opacity: 0,
+        y: 26,
+      }}
+      whileInView={{
+        opacity: 1,
+        y: 0,
+      }}
+      viewport={{
+        once: true,
+        amount: 0.15,
+      }}
+      transition={{
+        duration: 0.55,
+        delay: index * 0.08,
+      }}
+      whileHover={
+        reduced
+          ? undefined
+          : {
+              y: -6,
+            }
+      }
+      className={`
+        group
+        relative
+        overflow-hidden
+        rounded-3xl
+        border
+        p-7
+        transition-[border-color,box-shadow]
+        duration-300
+        sm:p-8
+
+        ${c.surface}
+      `}
+    >
+      {/* Hover Glow */}
+
+      <div
+        className="
+          pointer-events-none
+          absolute
+          -right-16
+          -top-16
+          h-48
+          w-48
+          rounded-full
+          bg-blue-400/10
+          blur-3xl
+          transition-transform
+          duration-500
+          group-hover:scale-125
+        "
+      />
+
+      {/* Card Header */}
+
+      <div
+        className="
+          relative
+          mb-6
+          flex
+          items-center
+          gap-4
+        "
+      >
+        <span
+          className={`
+            flex
+            h-14
+            w-14
+            shrink-0
+            items-center
+            justify-center
+            rounded-2xl
+
+            ${c.icon}
+          `}
+        >
+          {icon}
+        </span>
+
+        <div>
+          <h3
+            className={`
+              text-2xl
+              font-bold
+
+              ${c.title}
+            `}
+          >
+            {title}
+          </h3>
+
+          <p
+            className={`
+              mt-1
+              text-sm
+              sm:text-base
+
+              ${c.muted}
+            `}
+          >
+            {subtitle}
+          </p>
+        </div>
+      </div>
+
+      {/* Divider */}
+
+      <div
+        className={`
+          relative
+          mb-6
+          border-t
+
+          ${c.separator}
+        `}
+      />
+
+      {/* Technology Badges */}
+
+      <div
+        className="
+          relative
+          flex
+          flex-wrap
+          gap-3
+        "
+      >
+        {skills.map((skill) => (
+          <span
+            key={skill}
+            className={`
+              rounded-xl
+              border
+              px-4
+              py-2.5
+              text-base
+              font-semibold
+              transition-colors
+              duration-300
+
+              ${
+                c.dark
+                  ? 'border-sky-300/20 bg-[#183c65]/70 text-sky-100 group-hover:border-sky-300/35'
+                  : 'border-blue-200 bg-white text-blue-800 group-hover:border-sky-300'
+              }
+            `}
+          >
+            {skill}
+          </span>
+        ))}
+      </div>
+
+      {/* Bottom Information */}
+
+      <div
+        className={`
+          relative
+          mt-7
+          flex
+          items-center
+          gap-2
+          text-sm
+          font-medium
+
+          ${
+            c.dark
+              ? 'text-cyan-200'
+              : 'text-blue-700'
+          }
+        `}
+      >
+        <CheckCircle2 size={17} />
+
+        Technologies & tools
+      </div>
+    </motion.article>
+  );
+}
+
+/* =========================================================
+   PROFESSIONAL PROFILE PHOTO
+========================================================= */
+
+function ProfilePhoto({
+  c,
+}: {
+  c: Colors;
+}) {
+  const reduced = useReducedMotion();
+
+  return (
+    <motion.div
+      initial={{
+        opacity: 0,
+        x: 30,
+        scale: 0.96,
+      }}
+      animate={{
+        opacity: 1,
+        x: 0,
+        scale: 1,
+      }}
+      transition={{
+        duration: 0.85,
+      }}
+      className="
+        relative
+        mx-auto
+        flex
+        w-full
+        max-w-[550px]
+        items-center
+        justify-center
+        px-5
+        py-9
+      "
+    >
+      {/* Background Glow */}
+
+      <motion.div
+        className={`
+          pointer-events-none
+          absolute
+          inset-[13%]
+          rounded-full
+          blur-[80px]
+
+          ${
+            c.dark
+              ? 'bg-cyan-300/25'
+              : 'bg-sky-400/25'
+          }
+        `}
+        animate={
+          reduced
+            ? undefined
+            : {
+                scale: [1, 1.1, 1],
+              }
+        }
+        transition={{
+          duration: 7,
+          repeat: Infinity,
+          ease: 'easeInOut',
+        }}
+      />
+
+      {/* Rotating Decorative Ring */}
+
+      <motion.div
+        aria-hidden="true"
+        className={`
+          pointer-events-none
+          absolute
+          aspect-square
+          w-[94%]
+          rounded-full
+          border
+          border-dashed
+
+          ${
+            c.dark
+              ? 'border-cyan-200/25'
+              : 'border-blue-400/30'
+          }
+        `}
+        animate={
+          reduced
+            ? undefined
+            : {
+                rotate: 360,
+              }
+        }
+        transition={{
+          duration: 60,
+          repeat: Infinity,
+          ease: 'linear',
+        }}
+      />
+
+      {/* Photo */}
+
+      <motion.div
+        className="
+          relative
+          z-10
+          w-[91%]
+          max-w-[465px]
+          rounded-[34px]
+          bg-gradient-to-br
+          from-blue-300
+          via-cyan-300
+          to-blue-600
+          p-[5px]
+          shadow-[0_28px_75px_rgba(8,35,78,0.28)]
+        "
+        animate={
+          reduced
+            ? undefined
+            : {
+                y: [0, -9, 0],
+              }
+        }
+        transition={{
+          duration: 6,
+          repeat: Infinity,
+          ease: 'easeInOut',
+        }}
+      >
+        <div
+          className="
+            relative
+            aspect-[4/5]
+            overflow-hidden
+            rounded-[29px]
+            bg-[#b7c9dc]
+          "
+        >
+          <img
+            src={profilePhoto}
+            alt="Kodni Diyana professional portrait"
+            loading="eager"
+            className="
+              h-full
+              w-full
+              object-cover
+              object-center
+            "
+          />
+
+          {/* Subtle Bottom Gradient */}
+
+          <div
+            className="
+              pointer-events-none
+              absolute
+              inset-x-0
+              bottom-0
+              h-20
+              bg-gradient-to-t
+              from-[#163e67]/20
+              to-transparent
+            "
+          />
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+/* =========================================================
+   TECH STACK DATA
+========================================================= */
+
+const techGroups = [
+  {
+    icon: <Layout size={25} />,
+
+    title: 'Frontend',
+
+    subtitle:
+      'Interfaces & user experiences',
+
+    skills: [
+      'React.js',
+      'TypeScript',
+      'Tailwind CSS',
+      'Next.js',
+    ],
+  },
+
+  {
+    icon: <Server size={25} />,
+
+    title: 'Backend',
+
+    subtitle:
+      'APIs & application logic',
+
+    skills: [
+      'Node.js',
+      'Spring Boot',
+      'Express.js',
+      'REST APIs',
+    ],
+  },
+
+  {
+    icon: <Database size={25} />,
+
+    title: 'Database',
+
+    subtitle:
+      'Data storage & management',
+
+    skills: [
+      'MongoDB',
+      'MySQL',
+    ],
+  },
+
+  {
+    icon: <Terminal size={25} />,
+
+    title: 'Development Tools',
+
+    subtitle:
+      'Workflow & collaboration',
+
+    skills: [
+      'Git & GitHub',
+      'VS Code',
+      'Postman',
+    ],
+  },
+];
+
+/* =========================================================
+   MAIN HOME PAGE
+========================================================= */
+
+export function Home() {
+  const c = useColors();
+
+  const reduced = useReducedMotion();
+
+  return (
+    <main
+      className={`
+        relative
+        isolate
+        min-h-screen
+        overflow-hidden
+        transition-colors
+        duration-500
+
+        ${
+          c.dark
+            ? 'bg-[#193a63]'
+            : 'bg-[#f4f9ff]'
+        }
+      `}
+    >
+      {/* Background */}
+
+      <Background dark={c.dark} />
+
+      {/* Cursor Sparkles */}
+
+      <CursorSparkles dark={c.dark} />
+
+      <div className="relative z-10">
+
+        {/* =====================================================
+            HERO SECTION
+        ===================================================== */}
+
+        <section
+          className="
+            relative
+            flex
+            min-h-[82vh]
+            items-center
+            py-16
+            lg:py-20
+          "
+        >
+          <div
+            className="
+              mx-auto
+              w-full
+              max-w-[1400px]
+              px-5
+              sm:px-8
+              lg:px-12
+              xl:px-16
+            "
+          >
+            <div
+              className="
+                grid
+                items-center
+                gap-10
+                lg:grid-cols-[1.14fr_1fr]
+                lg:gap-14
+              "
+            >
+
+              {/* LEFT INTRODUCTION */}
+
+              <motion.div
+                variants={stagger}
+                initial="hidden"
+                animate="show"
+                className="
+                  order-2
+                  text-center
+                  lg:order-1
+                  lg:text-left
+                "
+              >
+
+                {/* Availability Badge */}
+
+                <motion.div variants={fade}>
+                  <span
+                    className={`
+                      mb-7
+                      inline-flex
+                      items-center
+                      gap-2
+                      rounded-full
+                      border
+                      px-4
+                      py-2
+                      text-sm
+                      font-semibold
+                      sm:text-base
+
+                      ${
+                        c.dark
+                          ? 'border-cyan-200/25 bg-cyan-300/10 text-cyan-100'
+                          : 'border-blue-200 bg-white/80 text-blue-800'
+                      }
+                    `}
+                  >
+                    <span
+                      className="
+                        h-2.5
+                        w-2.5
+                        rounded-full
+                        bg-emerald-400
+                      "
+                    />
+
+                    Available for Opportunities
+
+                    <Sparkles size={15} />
+                  </span>
+                </motion.div>
+
+                {/* Hello */}
+
+                <motion.p
+                  variants={fade}
+                  className={`
+                    mb-3
+                    text-xl
+                    font-semibold
+                    sm:text-2xl
+
+                    ${
+                      c.dark
+                        ? 'text-blue-200'
+                        : 'text-blue-700'
+                    }
+                  `}
+                >
+                  Hello, I'm
+                </motion.p>
+
+                {/* Name */}
+
+                <motion.h1
+                  variants={fade}
+                  className={`
+                    mb-6
+                    whitespace-nowrap
+                    text-[clamp(1.8rem,4.5vw,4.4rem)]
+                    font-extrabold
+                    leading-tight
+                    tracking-tight
+
+                    ${c.title}
+                  `}
+                >
+                  Kodni{' '}
+
+                  <span
+                    className="
+                      bg-gradient-to-r
+                      from-blue-500
+                      via-sky-400
+                      to-cyan-500
+                      bg-clip-text
+                      text-transparent
+                    "
+                  >
+                    Diyana
+                  </span>
+                </motion.h1>
+
+                {/* Profession */}
+
+                <motion.p
+                  variants={fade}
+                  className={`
+                    mb-5
+                    text-lg
+                    font-bold
+                    sm:text-xl
+                    xl:text-2xl
+
+                    ${c.title}
+                  `}
+                >
+                  Full Stack Developer{' '}
+
+                  <span className="px-1 text-cyan-500">
+                    |
+                  </span>{' '}
+
+                  UI/UX Enthusiast
+                </motion.p>
+
+                {/* Description */}
+
+                <motion.p
+                  variants={fade}
+                  className={`
+                    mx-auto
+                    mb-9
+                    max-w-[610px]
+                    text-lg
+                    leading-[1.85]
+                    sm:text-xl
+                    lg:mx-0
+
+                    ${c.muted}
+                  `}
+                >
+                  I enjoy building beautiful,
+                  functional, and user-friendly
+                  digital experiences. With a
+                  passion for modern web development
+                  and creative design, I transform
+                  ideas into responsive applications
+                  and meaningful digital solutions.
+                </motion.p>
+
+                {/* Buttons */}
+
+                <motion.div
+                  variants={fade}
+                  className="
+                    mb-8
+                    flex
+                    flex-col
+                    items-center
+                    justify-center
+                    gap-4
+                    sm:flex-row
+                    lg:justify-start
+                  "
+                >
+                  <Link
+                    to="/projects"
+                    className="
+                      group
+                      inline-flex
+                      w-full
+                      items-center
+                      justify-center
+                      gap-2
+                      rounded-xl
+                      bg-gradient-to-r
+                      from-blue-600
+                      to-cyan-500
+                      px-7
+                      py-4
+                      text-base
+                      font-bold
+                      text-white
+                      shadow-lg
+                      shadow-blue-500/25
+                      transition-all
+                      hover:-translate-y-1
+                      hover:shadow-blue-500/40
+                      sm:w-auto
+                    "
+                  >
+                    View My Projects
+
+                    <ArrowRight
+                      size={19}
+                      className="
+                        transition-transform
+                        group-hover:translate-x-1
+                      "
+                    />
+                  </Link>
+
+                  <a
+                    href="/diyaCV.pdf"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`
+                      inline-flex
+                      w-full
+                      items-center
+                      justify-center
+                      gap-2
+                      rounded-xl
+                      border
+                      px-7
+                      py-4
+                      text-base
+                      font-bold
+                      transition-all
+                      hover:-translate-y-1
+                      sm:w-auto
+
+                      ${c.secondary}
+                    `}
+                  >
+                    <Download size={19} />
+
+                    Download CV
+                  </a>
+                </motion.div>
+
+                {/* Quick Highlights */}
+
+                <motion.div
+                  variants={fade}
+                  className={`
+                    flex
+                    flex-wrap
+                    justify-center
+                    gap-x-6
+                    gap-y-3
+                    text-base
+                    lg:justify-start
+
+                    ${c.muted}
+                  `}
+                >
+                  {[
+                    'Responsive Design',
+                    'Modern Technologies',
+                    'Creative Solutions',
+                  ].map((item) => (
+                    <span
+                      key={item}
+                      className="
+                        inline-flex
+                        items-center
+                        gap-2
+                      "
+                    >
+                      <CheckCircle2
+                        size={17}
+                        className="text-emerald-500"
+                      />
+
+                      {item}
+                    </span>
+                  ))}
+                </motion.div>
+              </motion.div>
+
+              {/* RIGHT PROFILE PHOTO */}
+
+              <div className="order-1 lg:order-2">
+                <ProfilePhoto c={c} />
+              </div>
+
+            </div>
+          </div>
+
+          {/* Scroll Indicator */}
+
+          <motion.a
+            href="#statistics"
+            aria-label="Scroll to portfolio statistics"
+            className={`
+              absolute
+              bottom-0
+              left-1/2
+              hidden
+              -translate-x-1/2
+              flex-col
+              items-center
+              gap-1
+              text-xs
+              font-semibold
+              uppercase
+              tracking-[0.2em]
+              lg:flex
+
+              ${c.muted}
+            `}
+            animate={
+              reduced
+                ? undefined
+                : {
+                    y: [0, 7, 0],
+                  }
+            }
+            transition={{
+              duration: 2.2,
+              repeat: Infinity,
+            }}
+          >
+            Scroll down
+
+            <ChevronDown size={20} />
+          </motion.a>
+        </section>
+
+        {/* =====================================================
+            STATISTICS SECTION
+        ===================================================== */}
+
+        <section
+          id="statistics"
+          className="
+            scroll-mt-24
+            py-12
+            sm:py-16
+          "
+        >
+          <div
+            className="
+              mx-auto
+              max-w-7xl
+              px-5
+              sm:px-8
+              lg:px-12
+            "
+          >
+            <div
+              className="
+                grid
+                grid-cols-2
+                gap-4
+                sm:gap-6
+                lg:grid-cols-4
+              "
+            >
+              <StatCard
+                icon={<Code2 size={29} />}
+                value={2}
+                label="Years of Experience"
+                index={0}
+                c={c}
+              />
+
+              <StatCard
+                icon={<GitBranch size={29} />}
+                value={10}
+                label="Projects Completed"
+                index={1}
+                c={c}
+              />
+
+              <StatCard
+                icon={<Server size={29} />}
+                value={20}
+                label="Technologies Mastered"
+                index={2}
+                c={c}
+              />
+
+              <StatCard
+                icon={<Github size={29} />}
+                value={100}
+                label="GitHub Contributions"
+                index={3}
+                c={c}
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* =====================================================
+            ABOUT ME SECTION
+        ===================================================== */}
+
+        <section
+          id="about"
+          className="
+            scroll-mt-24
+            py-20
+            sm:py-28
+          "
+        >
+          <div
+            className="
+              mx-auto
+              max-w-7xl
+              px-5
+              sm:px-8
+              lg:px-12
+            "
+          >
+            <Heading
+              eyebrow="Get to Know Me"
+              first="About"
+              accent="Me"
+              description="Passionate about building meaningful digital experiences through technology, creativity, and user-centered design."
+              c={c}
+            />
+
+            <div
+              className="
+                grid
+                items-stretch
+                gap-7
+                lg:grid-cols-2
+              "
+            >
+
+              {/* Technical Background */}
+
+              <AboutCard
+                icon={<GraduationCap size={27} />}
+                title="Technical Background"
+                summary="I'm pursuing a Bachelor's degree in Information Technology and building a strong foundation in software development, modern web technologies, and user interface design."
+                c={c}
+              >
+                <Feature
+                  icon={<Code2 size={21} />}
+                  title="Frontend"
+                  description="HTML, CSS, JavaScript, React, and modern frameworks."
+                  c={c}
+                />
+
+                <Feature
+                  icon={<Server size={21} />}
+                  title="Backend"
+                  description="REST APIs and server-side application development."
+                  c={c}
+                />
+
+                <Feature
+                  icon={<Database size={21} />}
+                  title="Database"
+                  description="Database design and management using MySQL and MongoDB."
+                  c={c}
+                />
+              </AboutCard>
+
+              {/* What I Do */}
+
+              <AboutCard
+                icon={<Briefcase size={27} />}
+                title="What I Do"
+                summary="I combine development and design to create responsive, reliable, and intuitive digital solutions."
+                c={c}
+                delay={0.1}
+              >
+                <Feature
+                  icon={<Monitor size={21} />}
+                  title="Frontend Development"
+                  description="Responsive, accessible user interfaces with reusable code."
+                  c={c}
+                />
+
+                <Feature
+                  icon={<PenTool size={21} />}
+                  title="UI/UX Design"
+                  description="Clean, attractive interfaces that prioritize usability."
+                  c={c}
+                />
+
+                <Feature
+                  icon={<Server size={21} />}
+                  title="Backend Development"
+                  description="API integration and application services."
+                  c={c}
+                />
+
+                <Feature
+                  icon={<Database size={21} />}
+                  title="Database Management"
+                  description="Data organization, queries, and application data."
+                  c={c}
+                />
+              </AboutCard>
+            </div>
+
+            {/* About Button */}
+
+            <div className="mt-12 text-center">
+              <Link
+                to="/about"
+                className={`
+                  group
+                  inline-flex
+                  items-center
+                  gap-2
+                  rounded-xl
+                  border
+                  px-7
+                  py-3.5
+                  text-base
+                  font-bold
+                  transition-all
+                  hover:-translate-y-1
+
+                  ${c.secondary}
+                `}
+              >
+                More About Me
+
+                <ArrowRight
+                  size={18}
+                  className="
+                    transition-transform
+                    group-hover:translate-x-1
+                  "
+                />
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* =====================================================
+            TECH STACK SECTION
+        ===================================================== */}
+
+        <section
+          id="skills"
+          className={`
+            scroll-mt-24
+            py-20
+            sm:py-28
+
+            ${
+              c.dark
+                ? 'bg-[#0d2846]/20'
+                : 'bg-white/30'
+            }
+          `}
+        >
+          <div
+            className="
+              mx-auto
+              max-w-7xl
+              px-5
+              sm:px-8
+              lg:px-12
+            "
+          >
+            <Heading
+              eyebrow="My Technical Skills"
+              first="Tech"
+              accent="Stack"
+              description="Technologies, frameworks, databases, and development tools I use to bring digital ideas to life."
+              c={c}
+            />
+
+            {/* Professional Four Card Grid */}
+
+            <div
+              className="
+                grid
+                gap-7
+                lg:grid-cols-2
+              "
+            >
+              {techGroups.map(
+                (group, index) => (
+                  <TechCard
+                    key={group.title}
+                    {...group}
+                    index={index}
+                    c={c}
+                  />
+                )
+              )}
+            </div>
+
+            {/* Technology Highlights */}
+
+            <div
+              className="
+                mt-12
+                flex
+                flex-wrap
+                justify-center
+                gap-3
+              "
+            >
+              {[
+                {
+                  icon: <Code2 size={18} />,
+                  label: 'Clean Code',
+                },
+
+                {
+                  icon: <Globe size={18} />,
+                  label: 'Responsive Web',
+                },
+
+                {
+                  icon: <Layers size={18} />,
+                  label: 'Modern Frameworks',
+                },
+
+                {
+                  icon: <Figma size={18} />,
+                  label: 'UI/UX Design',
+                },
+
+                {
+                  icon: <ShieldCheck size={18} />,
+                  label: 'User-Centered',
+                },
+
+                {
+                  icon: <MousePointer2 size={18} />,
+                  label: 'Interactive UI',
+                },
+              ].map((item) => (
+                <span
+                  key={item.label}
+                  className={`
+                    inline-flex
+                    items-center
+                    gap-2
+                    rounded-full
+                    border
+                    px-4
+                    py-2.5
+                    text-base
+                    font-medium
+
+                    ${
+                      c.dark
+                        ? 'border-white/20 bg-white/10 text-slate-200'
+                        : 'border-blue-200 bg-white/80 text-slate-700'
+                    }
+                  `}
+                >
+                  <span
+                    className={
+                      c.dark
+                        ? 'text-cyan-200'
+                        : 'text-blue-700'
+                    }
+                  >
+                    {item.icon}
+                  </span>
+
+                  {item.label}
+                </span>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* =====================================================
+            CONTACT SECTION
+        ===================================================== */}
+
+        <section className="py-20 sm:py-28">
+          <div
+            className="
+              mx-auto
+              max-w-5xl
+              px-5
+              sm:px-8
+            "
+          >
+            <motion.div
+              initial={{
+                opacity: 0,
+                y: 30,
+              }}
+              whileInView={{
+                opacity: 1,
+                y: 0,
+              }}
+              viewport={{
+                once: true,
+              }}
+              transition={{
+                duration: 0.65,
+              }}
+              className={`
+                relative
+                overflow-hidden
+                rounded-[32px]
+                border
+                px-6
+                py-16
+                text-center
+                shadow-xl
+                sm:px-12
+                sm:py-20
+
+                ${
+                  c.dark
+                    ? 'border-cyan-200/25 bg-gradient-to-br from-[#2c5c90] to-[#173a62]'
+                    : 'border-blue-200 bg-gradient-to-br from-white via-[#eaf5ff] to-[#d5eaff]'
+                }
+              `}
+            >
+              {/* Decorative Glows */}
+
+              <div
+                className="
+                  pointer-events-none
+                  absolute
+                  -left-20
+                  -top-24
+                  h-64
+                  w-64
+                  rounded-full
+                  bg-cyan-400/15
+                  blur-3xl
+                "
+              />
+
+              <div
+                className="
+                  pointer-events-none
+                  absolute
+                  -bottom-24
+                  -right-20
+                  h-64
+                  w-64
+                  rounded-full
+                  bg-blue-400/15
+                  blur-3xl
+                "
+              />
+
+              <div className="relative">
+
+                {/* Contact Icon */}
+
+                <span
+                  className={`
+                    mx-auto
+                    mb-6
+                    flex
+                    h-16
+                    w-16
+                    items-center
+                    justify-center
+                    rounded-2xl
+
+                    ${c.icon}
+                  `}
+                >
+                  <Mail size={30} />
+                </span>
+
+                {/* Small Title */}
+
+                <p
+                  className={`
+                    mb-3
+                    text-base
+                    font-bold
+                    uppercase
+                    tracking-[0.15em]
+
+                    ${
+                      c.dark
+                        ? 'text-cyan-200'
+                        : 'text-blue-700'
+                    }
+                  `}
+                >
+                  Let's Connect
+                </p>
+
+                {/* Heading */}
+
+                <h2
+                  className={`
+                    mb-5
+                    text-4xl
+                    font-extrabold
+                    sm:text-5xl
+
+                    ${c.title}
+                  `}
+                >
+                  Have a Project in Mind?
+                </h2>
+
+                {/* Description */}
+
+                <p
+                  className={`
+                    mx-auto
+                    mb-9
+                    max-w-2xl
+                    text-lg
+                    leading-relaxed
+                    sm:text-xl
+
+                    ${c.muted}
+                  `}
+                >
+                  I'm always interested in new ideas,
+                  collaborations, and meaningful
+                  digital projects. Let's build
+                  something great together.
+                </p>
+
+                {/* Contact Buttons */}
+
+                <div
+                  className="
+                    flex
+                    flex-col
+                    justify-center
+                    gap-4
+                    sm:flex-row
+                  "
+                >
+                  <Link
+                    to="/contact"
+                    className="
+                      group
+                      inline-flex
+                      items-center
+                      justify-center
+                      gap-2
+                      rounded-xl
+                      bg-gradient-to-r
+                      from-blue-600
+                      to-cyan-500
+                      px-8
+                      py-4
+                      text-base
+                      font-bold
+                      text-white
+                      shadow-lg
+                      transition-all
+                      hover:-translate-y-1
+                    "
+                  >
+                    <Mail size={19} />
+
+                    Contact Me
+
+                    <ArrowRight
+                      size={18}
+                      className="
+                        transition-transform
+                        group-hover:translate-x-1
+                      "
+                    />
+                  </Link>
+
+                  <Link
+                    to="/projects"
+                    className={`
+                      inline-flex
+                      items-center
+                      justify-center
+                      gap-2
+                      rounded-xl
+                      border
+                      px-8
+                      py-4
+                      text-base
+                      font-bold
+                      transition-all
+                      hover:-translate-y-1
+
+                      ${c.secondary}
+                    `}
+                  >
+                    Explore My Work
+
+                    <ExternalLink size={18} />
+                  </Link>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  );
+}
+
+export default Home;

@@ -1,33 +1,70 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
-import { Mail, MapPin, Phone, Send, Github, Linkedin } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
-import { Input } from '../components/ui/input';
-import { Textarea } from '../components/ui/textarea';
-import { Button } from '../components/ui/button';
-import { Label } from '../components/ui/label';
+import {
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
+
+import type {
+  ChangeEvent,
+  FormEvent,
+} from 'react';
+
+import {
+  motion,
+  useReducedMotion,
+} from 'framer-motion';
+
+import {
+  Mail,
+  MapPin,
+  Phone,
+  Send,
+  Github,
+  Linkedin,
+  ArrowUpRight,
+  MessageCircle,
+  CheckCircle2,
+  User,
+  AtSign,
+  FileText,
+  Loader2,
+} from 'lucide-react';
+
+import { useTheme } from '../contexts/ThemeContext';
 import { useToast } from '../hooks/use-toast';
+
+/* =========================================================
+   CONTACT INFORMATION
+========================================================= */
+
+const EMAIL = 'kodnidiyanadesilva123@gmail.com';
+
+const WHATSAPP_NUMBER = '94742772707';
 
 const contactInfo = [
   {
     icon: Mail,
-    label: 'Email',
-    value: 'kodnidiyanadesilva123@gmail.com',
-    href: 'mailto:kodnidiyanadesilva123@gmail.com',
+    label: 'Email Address',
+    value: EMAIL,
+    href: `mailto:${EMAIL}`,
   },
   {
     icon: Phone,
     label: 'Phone / WhatsApp',
     value: '074 2772707',
-    href: 'https://wa.me/94742772707',
+    href: `https://wa.me/${WHATSAPP_NUMBER}`,
   },
   {
     icon: MapPin,
     label: 'Location',
-    value: 'Sri lanka, Matara',
-    href: '#',
+    value: 'Matara, Sri Lanka',
+    href: '',
   },
 ];
+
+/* =========================================================
+   SOCIAL MEDIA
+========================================================= */
 
 const socialLinks = [
   {
@@ -42,307 +79,1683 @@ const socialLinks = [
   },
 ];
 
-function useCursorGlow() {
-  const ref = useRef<HTMLDivElement | null>(null);
-  const mx = useMotionValue(0);
-  const my = useMotionValue(0);
-  const sx = useSpring(mx, { stiffness: 140, damping: 18, mass: 0.25 });
-  const sy = useSpring(my, { stiffness: 140, damping: 18, mass: 0.25 });
+/* =========================================================
+   FORM TYPES
+========================================================= */
+
+type ContactForm = {
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+};
+
+type FormErrors = Partial<
+  Record<keyof ContactForm, string>
+>;
+
+const initialForm: ContactForm = {
+  name: '',
+  email: '',
+  subject: '',
+  message: '',
+};
+
+/* =========================================================
+   BLUE CURSOR SPARKLE ANIMATION
+========================================================= */
+
+type Particle = {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
+  size: number;
+};
+
+function CursorSparkles({
+  dark,
+}: {
+  dark: boolean;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  const reducedMotion = useReducedMotion();
 
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
+    if (reducedMotion) return;
 
-    const onMove = (e: MouseEvent) => {
-      const r = el.getBoundingClientRect();
-      mx.set(e.clientX - r.left);
-      my.set(e.clientY - r.top);
+    const finePointer = window.matchMedia(
+      '(pointer: fine)'
+    );
+
+    if (!finePointer.matches) return;
+
+    const canvas = canvasRef.current;
+
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+
+    if (!ctx) return;
+
+    const particles: Particle[] = [];
+
+    let animationFrame = 0;
+    let lastSpawn = 0;
+    let previousFrame = performance.now();
+
+    /* Resize Canvas */
+
+    const resizeCanvas = () => {
+      const ratio = Math.min(
+        window.devicePixelRatio || 1,
+        2
+      );
+
+      canvas.width = Math.round(
+        window.innerWidth * ratio
+      );
+
+      canvas.height = Math.round(
+        window.innerHeight * ratio
+      );
+
+      canvas.style.width =
+        `${window.innerWidth}px`;
+
+      canvas.style.height =
+        `${window.innerHeight}px`;
+
+      ctx.setTransform(
+        ratio,
+        0,
+        0,
+        ratio,
+        0,
+        0
+      );
     };
 
-    el.addEventListener('mousemove', onMove);
-    return () => el.removeEventListener('mousemove', onMove);
-  }, [mx, my]);
+    /* Pointer Movement */
 
-  const background = useTransform([sx, sy], ([x, y]) =>
-    `radial-gradient(280px 240px at ${x}px ${y}px, rgba(99,102,241,0.18), rgba(14,165,233,0.08) 35%, rgba(2,6,23,0) 70%)`
+    const handlePointerMove = (
+      event: PointerEvent
+    ) => {
+      if (
+        event.pointerType === 'touch' ||
+        event.pointerType === 'pen'
+      ) {
+        return;
+      }
+
+      const now = performance.now();
+
+      if (now - lastSpawn < 25) return;
+
+      lastSpawn = now;
+
+      for (let i = 0; i < 3; i++) {
+        particles.push({
+          x:
+            event.clientX +
+            (Math.random() - 0.5) * 10,
+
+          y:
+            event.clientY +
+            (Math.random() - 0.5) * 10,
+
+          vx:
+            (Math.random() - 0.5) * 1.8,
+
+          vy:
+            (Math.random() - 0.5) * 1.8,
+
+          life: 1,
+
+          size:
+            Math.random() * 2 + 1,
+        });
+      }
+
+      if (particles.length > 100) {
+        particles.splice(
+          0,
+          particles.length - 100
+        );
+      }
+    };
+
+    /* Draw Sparkles */
+
+    const animate = (now: number) => {
+      const delta = Math.min(
+        (now - previousFrame) / 16.67,
+        2.5
+      );
+
+      previousFrame = now;
+
+      ctx.clearRect(
+        0,
+        0,
+        window.innerWidth,
+        window.innerHeight
+      );
+
+      particles.forEach((particle) => {
+        particle.x += particle.vx * delta;
+
+        particle.y += particle.vy * delta;
+
+        particle.life -= 0.025 * delta;
+
+        const opacity = Math.max(
+          particle.life,
+          0
+        );
+
+        ctx.globalAlpha = opacity;
+
+        ctx.fillStyle = dark
+          ? '#67e8f9'
+          : '#2563eb';
+
+        ctx.shadowColor = dark
+          ? '#38bdf8'
+          : '#3b82f6';
+
+        ctx.shadowBlur = 12;
+
+        ctx.beginPath();
+
+        ctx.arc(
+          particle.x,
+          particle.y,
+          particle.size,
+          0,
+          Math.PI * 2
+        );
+
+        ctx.fill();
+      });
+
+      for (
+        let i = particles.length - 1;
+        i >= 0;
+        i--
+      ) {
+        if (particles[i].life <= 0) {
+          particles.splice(i, 1);
+        }
+      }
+
+      ctx.globalAlpha = 1;
+      ctx.shadowBlur = 0;
+
+      animationFrame =
+        requestAnimationFrame(animate);
+    };
+
+    resizeCanvas();
+
+    window.addEventListener(
+      'resize',
+      resizeCanvas
+    );
+
+    window.addEventListener(
+      'pointermove',
+      handlePointerMove,
+      { passive: true }
+    );
+
+    animationFrame =
+      requestAnimationFrame(animate);
+
+    return () => {
+      cancelAnimationFrame(animationFrame);
+
+      window.removeEventListener(
+        'resize',
+        resizeCanvas
+      );
+
+      window.removeEventListener(
+        'pointermove',
+        handlePointerMove
+      );
+    };
+  }, [dark, reducedMotion]);
+
+  if (reducedMotion) return null;
+
+  return (
+    <canvas
+      ref={canvasRef}
+      aria-hidden="true"
+      className="
+        pointer-events-none
+        fixed
+        inset-0
+        z-[90]
+      "
+    />
   );
-
-  return { ref, style: { backgroundImage: background as unknown as string } };
 }
 
-const fadeUp = (d = 0) => ({
-  initial: { opacity: 0, y: 18 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.5, delay: d } },
-});
-
-const slideIn = (d = 0, x = 24) => ({
-  initial: { opacity: 0, x },
-  animate: { opacity: 1, x: 0, transition: { duration: 0.5, delay: d } },
-});
+/* =========================================================
+   MAIN CONTACT PAGE
+========================================================= */
 
 export function Contact() {
+  /* =====================================================
+     THEME
+  ===================================================== */
+
+  const { theme } = useTheme();
+
+  const dark = theme === 'dark';
+
+  const reducedMotion = useReducedMotion();
+
   const { toast } = useToast();
 
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    subject: '',
-    message: '',
-  });
+  /* =====================================================
+     FORM STATE
+  ===================================================== */
 
-  const [errors, setErrors] = useState<{ [k: string]: string }>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formData, setFormData] =
+    useState<ContactForm>(initialForm);
 
-  const { ref: sceneRef, style: glowStyle } = useCursorGlow();
+  const [errors, setErrors] =
+    useState<FormErrors>({});
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-    setErrors((prev) => ({ ...prev, [e.target.name]: '' }));
+  const [isSubmitting, setIsSubmitting] =
+    useState(false);
+
+  /* =====================================================
+     THEME STYLES
+  ===================================================== */
+
+  const heading = dark
+    ? 'text-white'
+    : 'text-slate-900';
+
+
+
+  const muted = dark
+    ? 'text-slate-300'
+    : 'text-slate-600';
+
+  const card = dark
+    ? `
+      border-blue-200/20
+      bg-gradient-to-br
+      from-[#2b5484]/95
+      to-[#1d3b63]/95
+      shadow-[0_18px_45px_rgba(5,20,45,0.22)]
+    `
+    : `
+      border-blue-200
+      bg-white/90
+      shadow-[0_15px_40px_rgba(40,95,170,0.12)]
+    `;
+
+  const smallCard = dark
+    ? `
+      border-blue-200/15
+      bg-white/[0.07]
+      hover:border-cyan-300/40
+      hover:bg-white/[0.12]
+    `
+    : `
+      border-blue-100
+      bg-blue-50/80
+      hover:border-blue-300
+      hover:bg-blue-100
+    `;
+
+  const iconStyle = dark
+    ? `
+      bg-cyan-300/15
+      text-cyan-200
+    `
+    : `
+      bg-blue-100
+      text-blue-700
+    `;
+
+  const inputStyle = dark
+    ? `
+      border-blue-200/20
+      bg-[#15375e]/65
+      text-white
+      placeholder:text-slate-400
+      focus:border-cyan-400
+      focus:ring-cyan-400/20
+    `
+    : `
+      border-blue-200
+      bg-white
+      text-slate-900
+      placeholder:text-slate-400
+      focus:border-blue-500
+      focus:ring-blue-500/20
+    `;
+
+  /* =====================================================
+     HANDLE INPUT CHANGE
+  ===================================================== */
+
+  const handleChange = (
+    event: ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement
+    >
+  ) => {
+    const { name, value } = event.target;
+
+    setFormData((previous) => ({
+      ...previous,
+      [name]: value,
+    }));
+
+    setErrors((previous) => ({
+      ...previous,
+      [name]: undefined,
+    }));
   };
 
-  const validate = () => {
-    const e: { [k: string]: string } = {};
+  /* =====================================================
+     FORM VALIDATION
+  ===================================================== */
 
-    if (formData.name.trim().length < 2) e.name = 'Please enter at least 2 characters.';
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) e.email = 'Enter a valid email address.';
-    if (formData.subject.trim().length < 3) e.subject = 'Add a short subject.';
-    if (formData.message.trim().length < 10) e.message = 'Tell me a bit more (10+ chars).';
+  const validate = (): boolean => {
+    const newErrors: FormErrors = {};
 
-    setErrors(e);
-    return Object.keys(e).length === 0;
+    if (formData.name.trim().length < 2) {
+      newErrors.name =
+        'Please enter at least 2 characters.';
+    }
+
+    if (
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+        formData.email.trim()
+      )
+    ) {
+      newErrors.email =
+        'Please enter a valid email address.';
+    }
+
+    if (formData.subject.trim().length < 3) {
+      newErrors.subject =
+        'Please enter a subject with at least 3 characters.';
+    }
+
+    if (formData.message.trim().length < 10) {
+      newErrors.message =
+        'Please enter at least 10 characters.';
+    }
+
+    setErrors(newErrors);
+
+    return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  /* =====================================================
+     SEND MESSAGE TO WHATSAPP
+  ===================================================== */
+
+  const handleSubmit = (
+    event: FormEvent<HTMLFormElement>
+  ) => {
+    event.preventDefault();
+
+    if (isSubmitting) return;
+
     if (!validate()) return;
 
     setIsSubmitting(true);
 
-    const whatsappMessage = `Hello Diyana,%0A%0AName: ${encodeURIComponent(formData.name)}%0AEmail: ${encodeURIComponent(formData.email)}%0ASubject: ${encodeURIComponent(formData.subject)}%0AMessage: ${encodeURIComponent(formData.message)}`;
+    const message = [
+      'Hello Diyana,',
+      '',
+      `Name: ${formData.name.trim()}`,
+      `Email: ${formData.email.trim()}`,
+      `Subject: ${formData.subject.trim()}`,
+      '',
+      'Message:',
+      formData.message.trim(),
+    ].join('\n');
 
-    window.open(`https://wa.me/94742772707?text=${whatsappMessage}`, '_blank');
+    const whatsappURL =
+      `https://wa.me/${WHATSAPP_NUMBER}` +
+      `?text=${encodeURIComponent(message)}`;
 
-    toast({
-      title: 'Opening WhatsApp!',
-      description: 'Your message is ready to send on WhatsApp.',
-    });
+    const newWindow = window.open(
+      whatsappURL,
+      '_blank',
+      'noopener,noreferrer'
+    );
 
-    setFormData({ name: '', email: '', subject: '', message: '' });
+    if (newWindow) {
+      toast({
+        title: 'WhatsApp Opened',
+        description:
+          'Your message is ready. Press Send in WhatsApp to deliver it.',
+      });
+
+      setFormData(initialForm);
+
+      setErrors({});
+    } else {
+      toast({
+        title: 'Unable to Open WhatsApp',
+        description:
+          'Please allow pop-ups or use the WhatsApp contact link.',
+        variant: 'destructive',
+      });
+    }
+
     setIsSubmitting(false);
   };
 
-  const Background = useMemo(
-    () => (
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute inset-0 opacity-[0.06] bg-[linear-gradient(to_right,#fff_1px,transparent_1px),linear-gradient(to_bottom,#fff_1px,transparent_1px)] bg-[size:56px_56px]" />
-        <div className="absolute -top-24 -left-24 h-80 w-80 rounded-full blur-3xl opacity-25 bg-indigo-500" />
-        <div className="absolute -bottom-28 -right-28 h-80 w-80 rounded-full blur-3xl opacity-20 bg-cyan-400" />
-      </div>
-    ),
-    []
-  );
-
-  const shell =
-    'relative rounded-2xl p-[1px] bg-[linear-gradient(180deg,rgba(255,255,255,0.14),rgba(255,255,255,0.04))]';
-  const panel =
-    'rounded-2xl bg-background/60 backdrop-blur supports-[backdrop-filter]:bg-background/45 border border-white/10';
+  /* =====================================================
+     PAGE RETURN
+  ===================================================== */
 
   return (
-    <div className="min-h-screen pt-24 pb-16 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-      <motion.div ref={sceneRef} style={glowStyle as any} className="pointer-events-none absolute inset-0" />
-      {Background}
+    <main
+      className={`
+        relative
+        isolate
+        min-h-screen
+        overflow-hidden
+        transition-colors
+        duration-500
 
-      <div className="max-w-6xl mx-auto relative">
-        <motion.div {...fadeUp(0)} className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs border border-white/10 bg-white/5 backdrop-blur mb-4">
-            <span className="inline-block h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-            Typically replies within 24 hours
+        ${
+          dark
+            ? `
+              bg-gradient-to-br
+              from-[#193a63]
+              via-[#1d4671]
+              to-[#122d50]
+            `
+            : `
+              bg-gradient-to-br
+              from-[#f4f9ff]
+              via-[#e9f3ff]
+              to-[#deedff]
+            `
+        }
+      `}
+    >
+      {/* =================================================
+          BACKGROUND DECORATION
+      ================================================= */}
+
+      <div
+        aria-hidden="true"
+        className="
+          pointer-events-none
+          absolute
+          inset-0
+          overflow-hidden
+        "
+      >
+        <div
+          className="
+            absolute
+            -left-40
+            -top-40
+            h-[550px]
+            w-[550px]
+            rounded-full
+            bg-blue-400/10
+            blur-[110px]
+          "
+        />
+
+        <div
+          className="
+            absolute
+            -right-40
+            top-[30%]
+            h-[550px]
+            w-[550px]
+            rounded-full
+            bg-cyan-400/10
+            blur-[110px]
+          "
+        />
+
+        {/* Subtle Grid */}
+
+        <div
+          className="
+            absolute
+            inset-0
+            opacity-[0.035]
+
+            [background-image:linear-gradient(#3b82f6_1px,transparent_1px),linear-gradient(90deg,#3b82f6_1px,transparent_1px)]
+
+            [background-size:68px_68px]
+          "
+        />
+      </div>
+
+      {/* =================================================
+          BLUE CURSOR SPARKLE TRAIL
+      ================================================= */}
+
+      <CursorSparkles dark={dark} />
+
+      <div
+        className="
+          relative
+          z-10
+          mx-auto
+          max-w-6xl
+          px-5
+          pb-20
+          pt-20
+          sm:px-8
+          lg:px-10
+        "
+      >
+        {/* =================================================
+            PAGE HEADER
+        ================================================= */}
+
+        <motion.header
+          initial={{
+            opacity: 0,
+            y: 25,
+          }}
+          animate={{
+            opacity: 1,
+            y: 0,
+          }}
+          transition={{
+            duration: reducedMotion ? 0 : 0.6,
+          }}
+          className="
+            mb-12
+            text-center
+          "
+        >
+          {/* Header Badge */}
+
+          <div
+            className={`
+              mb-5
+              inline-flex
+              items-center
+              gap-2
+              rounded-full
+              border
+              px-4
+              py-2
+              text-sm
+              font-semibold
+
+              ${
+                dark
+                  ? `
+                    border-cyan-300/25
+                    bg-cyan-300/10
+                    text-cyan-200
+                  `
+                  : `
+                    border-blue-200
+                    bg-blue-100
+                    text-blue-700
+                  `
+              }
+            `}
+          >
+            <span
+              className="
+                h-2
+                w-2
+                rounded-full
+                bg-emerald-400
+                animate-pulse
+              "
+            />
+
+            Let's Connect
           </div>
 
-          <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight mb-4">
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-white to-white/70">
-              Get In Touch
+          {/* Main Heading */}
+
+          <h1
+            className={`
+              mb-5
+              text-4xl
+              font-extrabold
+              tracking-tight
+              sm:text-5xl
+              lg:text-6xl
+
+              ${heading}
+            `}
+          >
+            Get In{' '}
+
+            <span
+              className="
+                bg-gradient-to-r
+                from-blue-500
+                via-sky-400
+                to-cyan-500
+                bg-clip-text
+                text-transparent
+              "
+            >
+              Touch
             </span>
           </h1>
 
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Have a project in mind or just want to chat? Feel free to reach out!
+          {/* Description */}
+
+          <p
+            className={`
+              mx-auto
+              max-w-2xl
+              text-base
+              leading-relaxed
+              sm:text-lg
+
+              ${muted}
+            `}
+          >
+            Have a project in mind, a collaboration
+            opportunity, or simply want to connect?
+            Feel free to reach out!
           </p>
 
+          {/* Decorative Line */}
+
           <motion.div
-            initial={{ width: 0, opacity: 0 }}
-            whileInView={{ width: 200, opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.15 }}
-            className="mx-auto mt-5 h-[3px] rounded-full bg-gradient-to-r from-indigo-400 via-sky-400 to-cyan-300"
+            initial={{
+              width: 0,
+            }}
+            animate={{
+              width: 100,
+            }}
+            transition={{
+              duration: reducedMotion ? 0 : 0.7,
+              delay: 0.2,
+            }}
+            className="
+              mx-auto
+              mt-6
+              h-1
+              rounded-full
+              bg-gradient-to-r
+              from-blue-500
+              to-cyan-400
+            "
           />
-        </motion.div>
+        </motion.header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <motion.div {...slideIn(0.05, -24)} className="lg:col-span-1 space-y-6">
-            <div className={shell}>
-              <Card className={panel}>
-                <CardHeader>
-                  <CardTitle>Contact Information</CardTitle>
-                  <CardDescription>Ways to reach me</CardDescription>
-                </CardHeader>
+        {/* =================================================
+            MAIN CONTACT LAYOUT
+        ================================================= */}
 
-                <CardContent className="space-y-3">
-                  {contactInfo.map((item, i) => (
-                    <motion.a
-                      key={item.label}
-                      href={item.href}
-                      target={item.href.startsWith('http') ? '_blank' : undefined}
-                      rel={item.href.startsWith('http') ? 'noopener noreferrer' : undefined}
-                      initial={{ opacity: 0, x: -14 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.15 + i * 0.07 }}
-                      className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 border border-transparent hover:border-white/10 transition-colors group"
-                    >
-                      <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                        <item.icon className="w-5 h-5 text-primary" />
-                      </div>
+        <div
+          className="
+            grid
+            grid-cols-1
+            items-start
+            gap-7
+            lg:grid-cols-3
+          "
+        >
+          {/* =============================================
+              LEFT COLUMN
+          ============================================= */}
 
-                      <div>
-                        <div className="text-xs text-muted-foreground">{item.label}</div>
-                        <div className="text-sm font-medium">{item.value}</div>
-                      </div>
-                    </motion.a>
-                  ))}
-                </CardContent>
-              </Card>
-            </div>
+          <motion.div
+            initial={{
+              opacity: 0,
+              x: -25,
+            }}
+            animate={{
+              opacity: 1,
+              x: 0,
+            }}
+            transition={{
+              duration: reducedMotion ? 0 : 0.6,
+              delay: 0.1,
+            }}
+            className="
+              space-y-6
+              lg:col-span-1
+            "
+          >
+            {/* ==========================================
+                CONTACT INFORMATION CARD
+            ========================================== */}
 
-            <div className={shell}>
-              <Card className={panel}>
-                <CardHeader>
-                  <CardTitle>Social Media</CardTitle>
-                  <CardDescription>Connect with me online</CardDescription>
-                </CardHeader>
+            <section
+              className={`
+                rounded-3xl
+                border
+                p-6
+                transition-[border-color,box-shadow]
+                duration-300
 
-                <CardContent>
-                  <div className="flex gap-3">
-                    {socialLinks.map((s, i) => (
-                      <motion.a
-                        key={s.label}
-                        href={s.href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{
-                          delay: 0.25 + i * 0.08,
-                          type: 'spring',
-                          stiffness: 260,
-                          damping: 18,
-                        }}
-                        whileHover={{ y: -2, rotate: -3 }}
-                        whileTap={{ scale: 0.98 }}
-                        aria-label={s.label}
-                        className="w-11 h-11 rounded-xl bg-primary/10 border border-white/10 flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors"
-                      >
-                        <s.icon className="w-[18px] h-[18px]" />
-                      </motion.a>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.45 }}
-              className="text-xs text-muted-foreground px-1"
+                ${card}
+              `}
             >
-              Prefer email for proposals & collaborations. Phone for urgent matters only.
-            </motion.div>
+              {/* Card Header */}
+
+              <div className="mb-6">
+                <div className="mb-4 flex items-center gap-3">
+                  <div
+                    className={`
+                      flex
+                      h-12
+                      w-12
+                      shrink-0
+                      items-center
+                      justify-center
+                      rounded-xl
+
+                      ${iconStyle}
+                    `}
+                  >
+                    <MessageCircle size={23} />
+                  </div>
+
+                  <div>
+                    <h2
+                      className={`
+                        text-xl
+                        font-bold
+
+                        ${heading}
+                      `}
+                    >
+                      Contact Information
+                    </h2>
+
+                    <p
+                      className={`
+                        mt-1
+                        text-sm
+
+                        ${muted}
+                      `}
+                    >
+                      Ways to reach me
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Contact Details */}
+
+              <div className="space-y-3">
+                {contactInfo.map((item, index) => {
+                  const Icon = item.icon;
+
+                  const content = (
+                    <>
+                      {/* Icon */}
+
+                      <div
+                        className={`
+                          flex
+                          h-11
+                          w-11
+                          shrink-0
+                          items-center
+                          justify-center
+                          rounded-xl
+
+                          ${iconStyle}
+                        `}
+                      >
+                        <Icon size={20} />
+                      </div>
+
+                      {/* Information */}
+
+                      <div className="min-w-0 flex-1">
+                        <p
+                          className={`
+                            text-xs
+                            font-medium
+
+                            ${muted}
+                          `}
+                        >
+                          {item.label}
+                        </p>
+
+                        <p
+                          className={`
+                            mt-1
+                            break-all
+                            text-sm
+                            font-semibold
+                            leading-relaxed
+
+                            ${heading}
+                          `}
+                        >
+                          {item.value}
+                        </p>
+                      </div>
+
+                      {/* External Link Icon */}
+
+                      {item.href && (
+                        <ArrowUpRight
+                          size={16}
+                          className={`
+                            shrink-0
+                            opacity-50
+                            transition-all
+                            group-hover:translate-x-0.5
+                            group-hover:-translate-y-0.5
+                            group-hover:opacity-100
+
+                            ${
+                              dark
+                                ? 'text-cyan-300'
+                                : 'text-blue-600'
+                            }
+                          `}
+                        />
+                      )}
+                    </>
+                  );
+
+                  return (
+                    <motion.div
+                      key={item.label}
+                      initial={{
+                        opacity: 0,
+                        y: 12,
+                      }}
+                      animate={{
+                        opacity: 1,
+                        y: 0,
+                      }}
+                      transition={{
+                        duration: reducedMotion
+                          ? 0
+                          : 0.45,
+                        delay: index * 0.08,
+                      }}
+                    >
+                      {item.href ? (
+                        <a
+                          href={item.href}
+                          target={
+                            item.href.startsWith('http')
+                              ? '_blank'
+                              : undefined
+                          }
+                          rel={
+                            item.href.startsWith('http')
+                              ? 'noopener noreferrer'
+                              : undefined
+                          }
+                          className={`
+                            group
+                            flex
+                            items-center
+                            gap-3
+                            rounded-xl
+                            border
+                            p-3.5
+                            transition-all
+                            duration-300
+                            hover:-translate-y-0.5
+
+                            ${smallCard}
+                          `}
+                        >
+                          {content}
+                        </a>
+                      ) : (
+                        <div
+                          className={`
+                            flex
+                            items-center
+                            gap-3
+                            rounded-xl
+                            border
+                            p-3.5
+
+                            ${smallCard}
+                          `}
+                        >
+                          {content}
+                        </div>
+                      )}
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </section>
+
+            {/* ==========================================
+                SOCIAL MEDIA CARD
+            ========================================== */}
+
+            <section
+              className={`
+                rounded-3xl
+                border
+                p-6
+
+                ${card}
+              `}
+            >
+              {/* Header */}
+
+              <div className="mb-5">
+                <h2
+                  className={`
+                    text-xl
+                    font-bold
+
+                    ${heading}
+                  `}
+                >
+                  Connect With Me
+                </h2>
+
+                <p
+                  className={`
+                    mt-2
+                    text-sm
+
+                    ${muted}
+                  `}
+                >
+                  Find me on professional platforms
+                </p>
+              </div>
+
+              {/* Social Buttons */}
+
+              <div className="grid grid-cols-2 gap-3">
+                {socialLinks.map((social) => {
+                  const Icon = social.icon;
+
+                  return (
+                    <motion.a
+                      key={social.label}
+                      href={social.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`Visit my ${social.label} profile`}
+                      whileHover={
+                        reducedMotion
+                          ? undefined
+                          : {
+                              y: -4,
+                            }
+                      }
+                      whileTap={
+                        reducedMotion
+                          ? undefined
+                          : {
+                              scale: 0.97,
+                            }
+                      }
+                      className={`
+                        group
+                        flex
+                        items-center
+                        justify-center
+                        gap-2.5
+                        rounded-xl
+                        border
+                        px-3
+                        py-3.5
+                        text-sm
+                        font-semibold
+                        transition-colors
+                        duration-300
+
+                        ${smallCard}
+                        ${heading}
+                      `}
+                    >
+                      <Icon size={19} />
+
+                      {social.label}
+
+                      <ArrowUpRight
+                        size={14}
+                        className="
+                          opacity-60
+                          transition-transform
+                          group-hover:translate-x-0.5
+                          group-hover:-translate-y-0.5
+                        "
+                      />
+                    </motion.a>
+                  );
+                })}
+              </div>
+            </section>
+
+            {/* Small Contact Note */}
+
+            <div
+              className={`
+                flex
+                items-start
+                gap-3
+                rounded-xl
+                border
+                p-4
+
+                ${
+                  dark
+                    ? `
+                      border-cyan-300/20
+                      bg-cyan-300/[0.07]
+                    `
+                    : `
+                      border-blue-200
+                      bg-blue-50
+                    `
+                }
+              `}
+            >
+              <CheckCircle2
+                size={19}
+                className="
+                  mt-0.5
+                  shrink-0
+                  text-cyan-400
+                "
+              />
+
+              <p
+                className={`
+                  text-sm
+                  leading-relaxed
+
+                  ${muted}
+                `}
+              >
+                Email is preferred for project proposals
+                and professional collaborations.
+                WhatsApp is also available for
+                direct communication.
+              </p>
+            </div>
           </motion.div>
 
-          <motion.div {...slideIn(0.12, 24)} className="lg:col-span-2">
-            <div className={shell}>
-              <Card className={panel}>
-                <CardHeader className="pb-2">
-                  <CardTitle>Send a Message</CardTitle>
-                  <CardDescription>Fill out the form and send it directly to WhatsApp</CardDescription>
-                </CardHeader>
+          {/* =============================================
+              RIGHT COLUMN — MESSAGE FORM
+          ============================================= */}
 
-                <div className="px-6">
-                  <div className="h-px w-full bg-gradient-to-r from-transparent via-white/15 to-transparent" />
+          <motion.section
+            initial={{
+              opacity: 0,
+              x: 25,
+            }}
+            animate={{
+              opacity: 1,
+              x: 0,
+            }}
+            transition={{
+              duration: reducedMotion ? 0 : 0.6,
+              delay: 0.15,
+            }}
+            className={`
+              rounded-3xl
+              border
+              p-6
+              sm:p-8
+              lg:col-span-2
+
+              ${card}
+            `}
+          >
+            {/* ==========================================
+                FORM HEADER
+            ========================================== */}
+
+            <div
+              className="
+                mb-7
+                flex
+                items-start
+                gap-4
+              "
+            >
+              {/* Icon */}
+
+              <div
+                className={`
+                  flex
+                  h-13
+                  w-13
+                  shrink-0
+                  items-center
+                  justify-center
+                  rounded-xl
+                  p-3
+
+                  ${iconStyle}
+                `}
+              >
+                <Send size={24} />
+              </div>
+
+              {/* Heading */}
+
+              <div>
+                <h2
+                  className={`
+                    text-2xl
+                    font-bold
+
+                    ${heading}
+                  `}
+                >
+                  Send a Message
+                </h2>
+
+                <p
+                  className={`
+                    mt-2
+                    text-sm
+                    leading-relaxed
+                    sm:text-base
+
+                    ${muted}
+                  `}
+                >
+                  Fill out the form below and
+                  continue to WhatsApp to send
+                  your message.
+                </p>
+              </div>
+            </div>
+
+            {/* Divider */}
+
+            <div
+              className={`
+                mb-7
+                border-t
+
+                ${
+                  dark
+                    ? 'border-white/15'
+                    : 'border-blue-200'
+                }
+              `}
+            />
+
+            {/* ==========================================
+                CONTACT FORM
+            ========================================== */}
+
+            <form
+              onSubmit={handleSubmit}
+              noValidate
+              className="space-y-6"
+            >
+              {/* ======================================
+                  NAME & EMAIL
+              ====================================== */}
+
+              <div
+                className="
+                  grid
+                  grid-cols-1
+                  gap-5
+                  sm:grid-cols-2
+                "
+              >
+                {/* NAME FIELD */}
+
+                <div className="space-y-2.5">
+                  <label
+                    htmlFor="contact-name"
+                    className={`
+                      flex
+                      items-center
+                      gap-2
+                      text-sm
+                      font-semibold
+
+                      ${heading}
+                    `}
+                  >
+                    <User
+                      size={16}
+                      className="text-cyan-400"
+                    />
+
+                    Your Name
+
+                    <span className="text-red-400">
+                      *
+                    </span>
+                  </label>
+
+                  <input
+                    id="contact-name"
+                    name="name"
+                    type="text"
+                    autoComplete="name"
+                    placeholder="Enter your full name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    aria-invalid={Boolean(errors.name)}
+                    aria-describedby={
+                      errors.name
+                        ? 'contact-name-error'
+                        : undefined
+                    }
+                    className={`
+                      h-12
+                      w-full
+                      rounded-xl
+                      border
+                      px-4
+                      text-sm
+                      outline-none
+                      ring-4
+                      ring-transparent
+                      transition-all
+                      duration-300
+
+                      ${inputStyle}
+
+                      ${
+                        errors.name
+                          ? 'border-red-400 ring-red-400/10'
+                          : ''
+                      }
+                    `}
+                  />
+
+                  {errors.name && (
+                    <p
+                      id="contact-name-error"
+                      role="alert"
+                      className="text-xs text-red-400"
+                    >
+                      {errors.name}
+                    </p>
+                  )}
                 </div>
 
-                <CardContent className="pt-6">
-                  <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="name">Name</Label>
-                        <Input
-                          id="name"
-                          name="name"
-                          placeholder="Your name"
-                          value={formData.name}
-                          onChange={handleChange}
-                          required
-                          className={errors.name ? 'border-red-500/60' : ''}
-                        />
-                        {errors.name && <p className="text-xs text-red-400">{errors.name}</p>}
-                      </div>
+                {/* EMAIL FIELD */}
 
-                      <div className="space-y-2">
-                        <Label htmlFor="email">Email</Label>
-                        <Input
-                          id="email"
-                          name="email"
-                          type="email"
-                          placeholder="your.email@example.com"
-                          value={formData.email}
-                          onChange={handleChange}
-                          required
-                          className={errors.email ? 'border-red-500/60' : ''}
-                        />
-                        {errors.email && <p className="text-xs text-red-400">{errors.email}</p>}
-                      </div>
-                    </div>
+                <div className="space-y-2.5">
+                  <label
+                    htmlFor="contact-email"
+                    className={`
+                      flex
+                      items-center
+                      gap-2
+                      text-sm
+                      font-semibold
 
-                    <div className="space-y-2">
-                      <Label htmlFor="subject">Subject</Label>
-                      <Input
-                        id="subject"
-                        name="subject"
-                        placeholder="What's this about?"
-                        value={formData.subject}
-                        onChange={handleChange}
-                        required
-                        className={errors.subject ? 'border-red-500/60' : ''}
-                      />
-                      {errors.subject && <p className="text-xs text-red-400">{errors.subject}</p>}
-                    </div>
+                      ${heading}
+                    `}
+                  >
+                    <AtSign
+                      size={16}
+                      className="text-cyan-400"
+                    />
 
-                    <div className="space-y-2">
-                      <Label htmlFor="message">Message</Label>
-                      <Textarea
-                        id="message"
-                        name="message"
-                        placeholder="Tell me about your project or inquiry..."
-                        rows={6}
-                        value={formData.message}
-                        onChange={handleChange}
-                        required
-                        className={errors.message ? 'border-red-500/60' : ''}
-                      />
-                      {errors.message && <p className="text-xs text-red-400">{errors.message}</p>}
-                    </div>
+                    Email Address
 
-                    <Button type="submit" size="lg" disabled={isSubmitting} className="w-full sm:w-auto">
-                      <Send className="w-4 h-4 mr-2" />
-                      Send to WhatsApp
-                    </Button>
-                  </form>
-                </CardContent>
-              </Card>
-            </div>
-          </motion.div>
+                    <span className="text-red-400">
+                      *
+                    </span>
+                  </label>
+
+                  <input
+                    id="contact-email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    placeholder="your.email@example.com"
+                    value={formData.email}
+                    onChange={handleChange}
+                    aria-invalid={Boolean(errors.email)}
+                    aria-describedby={
+                      errors.email
+                        ? 'contact-email-error'
+                        : undefined
+                    }
+                    className={`
+                      h-12
+                      w-full
+                      rounded-xl
+                      border
+                      px-4
+                      text-sm
+                      outline-none
+                      ring-4
+                      ring-transparent
+                      transition-all
+                      duration-300
+
+                      ${inputStyle}
+
+                      ${
+                        errors.email
+                          ? 'border-red-400 ring-red-400/10'
+                          : ''
+                      }
+                    `}
+                  />
+
+                  {errors.email && (
+                    <p
+                      id="contact-email-error"
+                      role="alert"
+                      className="text-xs text-red-400"
+                    >
+                      {errors.email}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* ======================================
+                  SUBJECT FIELD
+              ====================================== */}
+
+              <div className="space-y-2.5">
+                <label
+                  htmlFor="contact-subject"
+                  className={`
+                    flex
+                    items-center
+                    gap-2
+                    text-sm
+                    font-semibold
+
+                    ${heading}
+                  `}
+                >
+                  <FileText
+                    size={16}
+                    className="text-cyan-400"
+                  />
+
+                  Subject
+
+                  <span className="text-red-400">
+                    *
+                  </span>
+                </label>
+
+                <input
+                  id="contact-subject"
+                  name="subject"
+                  type="text"
+                  placeholder="What would you like to discuss?"
+                  value={formData.subject}
+                  onChange={handleChange}
+                  aria-invalid={Boolean(errors.subject)}
+                  aria-describedby={
+                    errors.subject
+                      ? 'contact-subject-error'
+                      : undefined
+                  }
+                  className={`
+                    h-12
+                    w-full
+                    rounded-xl
+                    border
+                    px-4
+                    text-sm
+                    outline-none
+                    ring-4
+                    ring-transparent
+                    transition-all
+                    duration-300
+
+                    ${inputStyle}
+
+                    ${
+                      errors.subject
+                        ? 'border-red-400 ring-red-400/10'
+                        : ''
+                    }
+                  `}
+                />
+
+                {errors.subject && (
+                  <p
+                    id="contact-subject-error"
+                    role="alert"
+                    className="text-xs text-red-400"
+                  >
+                    {errors.subject}
+                  </p>
+                )}
+              </div>
+
+              {/* ======================================
+                  MESSAGE FIELD
+              ====================================== */}
+
+              <div className="space-y-2.5">
+                <label
+                  htmlFor="contact-message"
+                  className={`
+                    flex
+                    items-center
+                    gap-2
+                    text-sm
+                    font-semibold
+
+                    ${heading}
+                  `}
+                >
+                  <MessageCircle
+                    size={16}
+                    className="text-cyan-400"
+                  />
+
+                  Your Message
+
+                  <span className="text-red-400">
+                    *
+                  </span>
+                </label>
+
+                <textarea
+                  id="contact-message"
+                  name="message"
+                  rows={6}
+                  placeholder="Tell me about your project, collaboration opportunity, or inquiry..."
+                  value={formData.message}
+                  onChange={handleChange}
+                  aria-invalid={Boolean(errors.message)}
+                  aria-describedby={
+                    errors.message
+                      ? 'contact-message-error'
+                      : undefined
+                  }
+                  className={`
+                    min-h-[155px]
+                    w-full
+                    resize-y
+                    rounded-xl
+                    border
+                    px-4
+                    py-3.5
+                    text-sm
+                    leading-relaxed
+                    outline-none
+                    ring-4
+                    ring-transparent
+                    transition-all
+                    duration-300
+
+                    ${inputStyle}
+
+                    ${
+                      errors.message
+                        ? 'border-red-400 ring-red-400/10'
+                        : ''
+                    }
+                  `}
+                />
+
+                {errors.message && (
+                  <p
+                    id="contact-message-error"
+                    role="alert"
+                    className="text-xs text-red-400"
+                  >
+                    {errors.message}
+                  </p>
+                )}
+              </div>
+
+              {/* ======================================
+                  SUBMIT BUTTON
+              ====================================== */}
+
+              <div
+                className="
+                  flex
+                  flex-col
+                  items-start
+                  gap-4
+                  sm:flex-row
+                  sm:items-center
+                  sm:justify-between
+                "
+              >
+                {/* Button */}
+
+                <motion.button
+                  type="submit"
+                  disabled={isSubmitting}
+                  whileHover={
+                    reducedMotion || isSubmitting
+                      ? undefined
+                      : {
+                          y: -3,
+                        }
+                  }
+                  whileTap={
+                    reducedMotion || isSubmitting
+                      ? undefined
+                      : {
+                          scale: 0.97,
+                        }
+                  }
+                  className="
+                    group
+                    inline-flex
+                    w-full
+                    items-center
+                    justify-center
+                    gap-3
+                    rounded-xl
+
+                    bg-gradient-to-r
+                    from-blue-600
+                    to-cyan-500
+
+                    px-7
+                    py-3.5
+
+                    text-sm
+                    font-bold
+                    text-white
+
+                    shadow-lg
+                    shadow-blue-500/20
+
+                    transition-[box-shadow,opacity]
+                    duration-300
+
+                    hover:shadow-blue-500/40
+
+                    disabled:cursor-not-allowed
+                    disabled:opacity-60
+
+                    sm:w-auto
+                  "
+                >
+                  {isSubmitting ? (
+                    <Loader2
+                      size={18}
+                      className="animate-spin"
+                    />
+                  ) : (
+                    <Send size={18} />
+                  )}
+
+                  {isSubmitting
+                    ? 'Opening WhatsApp...'
+                    : 'Send to WhatsApp'}
+
+                  {!isSubmitting && (
+                    <ArrowUpRight
+                      size={17}
+                      className="
+                        transition-transform
+                        group-hover:translate-x-0.5
+                        group-hover:-translate-y-0.5
+                      "
+                    />
+                  )}
+                </motion.button>
+
+                {/* Helper Text */}
+
+                <div
+                  className={`
+                    flex
+                    items-start
+                    gap-2
+                    text-xs
+                    leading-relaxed
+
+                    ${muted}
+                  `}
+                >
+                  <CheckCircle2
+                    size={15}
+                    className="
+                      mt-0.5
+                      shrink-0
+                      text-emerald-400
+                    "
+                  />
+
+                  Review and send your
+                  message in WhatsApp.
+                </div>
+              </div>
+            </form>
+          </motion.section>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
+
+export default Contact;
