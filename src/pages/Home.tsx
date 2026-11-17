@@ -39,6 +39,14 @@ import { useTheme } from '../contexts/ThemeContext';
 import profilePhoto from '../assets/myprofessional_pic.jpeg';
 
 /* =========================================================
+   CV CONFIGURATION
+========================================================= */
+
+const CV_PATH = '/mycv.pdf';
+
+const CV_DOWNLOAD_NAME = 'Diyana_De_Silva_CV.pdf';
+
+/* =========================================================
    TYPES
 ========================================================= */
 
@@ -80,7 +88,7 @@ const stagger = {
 };
 
 /* =========================================================
-   LIGHT AND DARK MODE COLORS
+   LIGHT AND DARK MODE
 ========================================================= */
 
 function useColors(): Colors {
@@ -197,14 +205,9 @@ function CursorSparkles({
     const particles: Particle[] = [];
 
     let raf = 0;
-
     let lastSpawn = 0;
-
     let lastFrame = performance.now();
-
     let active = true;
-
-    /* Canvas Resize */
 
     const resize = () => {
       const ratio = Math.min(
@@ -220,11 +223,8 @@ function CursorSparkles({
         window.innerHeight * ratio
       );
 
-      canvas.style.width =
-        `${window.innerWidth}px`;
-
-      canvas.style.height =
-        `${window.innerHeight}px`;
+      canvas.style.width = `${window.innerWidth}px`;
+      canvas.style.height = `${window.innerHeight}px`;
 
       ctx.setTransform(
         ratio,
@@ -236,30 +236,19 @@ function CursorSparkles({
       );
     };
 
-    /* Generate particles */
-
     const move = (event: PointerEvent) => {
-      if (event.pointerType === 'touch') {
-        return;
-      }
+      if (event.pointerType !== 'mouse') return;
 
-      const time = performance.now();
+      const now = performance.now();
 
-      if (time - lastSpawn < 25) {
-        return;
-      }
+      if (now - lastSpawn < 25) return;
 
-      lastSpawn = time;
+      lastSpawn = now;
 
       for (let i = 0; i < 3; i++) {
-        const theta =
-          Math.random() * Math.PI * 2;
-
-        const speed =
-          0.25 + Math.random() * 0.85;
-
-        const life =
-          450 + Math.random() * 400;
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 0.25 + Math.random() * 0.85;
+        const life = 450 + Math.random() * 400;
 
         particles.push({
           x:
@@ -270,18 +259,14 @@ function CursorSparkles({
             event.clientY +
             (Math.random() - 0.5) * 10,
 
-          vx:
-            Math.cos(theta) * speed,
+          vx: Math.cos(angle) * speed,
 
-          vy:
-            Math.sin(theta) * speed - 0.3,
+          vy: Math.sin(angle) * speed - 0.3,
 
           life,
-
           maxLife: life,
 
-          radius:
-            1 + Math.random() * 2.4,
+          radius: 1 + Math.random() * 2.4,
         });
       }
 
@@ -292,8 +277,6 @@ function CursorSparkles({
         );
       }
     };
-
-    /* Draw particles */
 
     const render = (now: number) => {
       if (!active) return;
@@ -312,28 +295,21 @@ function CursorSparkles({
         window.innerHeight
       );
 
-      for (
-        let i = particles.length - 1;
-        i >= 0;
-        i--
-      ) {
-        const item = particles[i];
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const particle = particles[i];
 
-        item.life -= delta;
+        particle.life -= delta;
 
-        if (item.life <= 0) {
+        if (particle.life <= 0) {
           particles.splice(i, 1);
           continue;
         }
 
-        item.x +=
-          (item.vx * delta) / 16;
-
-        item.y +=
-          (item.vy * delta) / 16;
+        particle.x += (particle.vx * delta) / 16;
+        particle.y += (particle.vy * delta) / 16;
 
         const opacity =
-          item.life / item.maxLife;
+          particle.life / particle.maxLife;
 
         ctx.globalAlpha =
           opacity * (dark ? 0.95 : 0.8);
@@ -351,9 +327,9 @@ function CursorSparkles({
         ctx.beginPath();
 
         ctx.arc(
-          item.x,
-          item.y,
-          item.radius * opacity,
+          particle.x,
+          particle.y,
+          Math.max(0.1, particle.radius * opacity),
           0,
           Math.PI * 2
         );
@@ -362,7 +338,6 @@ function CursorSparkles({
       }
 
       ctx.globalAlpha = 1;
-
       ctx.shadowBlur = 0;
 
       raf = requestAnimationFrame(render);
@@ -370,10 +345,7 @@ function CursorSparkles({
 
     resize();
 
-    window.addEventListener(
-      'resize',
-      resize
-    );
+    window.addEventListener('resize', resize);
 
     window.addEventListener(
       'pointermove',
@@ -388,10 +360,7 @@ function CursorSparkles({
 
       cancelAnimationFrame(raf);
 
-      window.removeEventListener(
-        'resize',
-        resize
-      );
+      window.removeEventListener('resize', resize);
 
       window.removeEventListener(
         'pointermove',
@@ -400,20 +369,13 @@ function CursorSparkles({
     };
   }, [dark, reduced]);
 
-  if (reduced) {
-    return null;
-  }
+  if (reduced) return null;
 
   return (
     <canvas
       ref={canvasRef}
       aria-hidden="true"
-      className="
-        pointer-events-none
-        fixed
-        inset-0
-        z-50
-      "
+      className="pointer-events-none fixed inset-0 z-50"
     />
   );
 }
@@ -432,45 +394,22 @@ function Background({
   return (
     <div
       aria-hidden="true"
-      className="
-        pointer-events-none
-        absolute
-        inset-0
-        overflow-hidden
-      "
+      className="pointer-events-none absolute inset-0 overflow-hidden"
     >
-      {/* Main Background */}
-
       <div
-        className={`
-          absolute inset-0
-
-          ${
-            dark
-              ? 'bg-gradient-to-br from-[#193a63] via-[#1d4671] to-[#122d50]'
-              : 'bg-gradient-to-br from-[#f4f9ff] via-[#e9f3ff] to-[#deedff]'
-          }
-        `}
+        className={`absolute inset-0 ${
+          dark
+            ? 'bg-gradient-to-br from-[#193a63] via-[#1d4671] to-[#122d50]'
+            : 'bg-gradient-to-br from-[#f4f9ff] via-[#e9f3ff] to-[#deedff]'
+        }`}
       />
 
-      {/* Left Glow */}
-
       <motion.div
-        className={`
-          absolute
-          -left-40
-          -top-32
-          h-[540px]
-          w-[540px]
-          rounded-full
-          blur-[110px]
-
-          ${
-            dark
-              ? 'bg-blue-400/15'
-              : 'bg-blue-300/35'
-          }
-        `}
+        className={`absolute -left-40 -top-32 h-[540px] w-[540px] rounded-full blur-[110px] ${
+          dark
+            ? 'bg-blue-400/15'
+            : 'bg-blue-300/35'
+        }`}
         animate={
           reduced
             ? undefined
@@ -486,24 +425,12 @@ function Background({
         }}
       />
 
-      {/* Right Glow */}
-
       <motion.div
-        className={`
-          absolute
-          right-[-160px]
-          top-[18%]
-          h-[600px]
-          w-[600px]
-          rounded-full
-          blur-[120px]
-
-          ${
-            dark
-              ? 'bg-cyan-400/10'
-              : 'bg-cyan-300/30'
-          }
-        `}
+        className={`absolute right-[-160px] top-[18%] h-[600px] w-[600px] rounded-full blur-[120px] ${
+          dark
+            ? 'bg-cyan-400/10'
+            : 'bg-cyan-300/30'
+        }`}
         animate={
           reduced
             ? undefined
@@ -519,16 +446,10 @@ function Background({
         }}
       />
 
-      {/* Subtle Grid */}
-
       <div
         className="
-          absolute
-          inset-0
-          opacity-[0.035]
-
+          absolute inset-0 opacity-[0.035]
           [background-image:linear-gradient(#3b82f6_1px,transparent_1px),linear-gradient(90deg,#3b82f6_1px,transparent_1px)]
-
           [background-size:68px_68px]
         "
       />
@@ -564,47 +485,21 @@ function Heading({
       variants={stagger}
       className="mb-12 text-center"
     >
-      {/* Section Badge */}
-
       <motion.span
         variants={fade}
-        className={`
-          mb-5
-          inline-flex
-          items-center
-          gap-2
-          rounded-full
-          border
-          px-4
-          py-2
-          text-sm
-          font-semibold
-          sm:text-base
-
-          ${
-            c.dark
-              ? 'border-cyan-300/25 bg-cyan-300/10 text-cyan-200'
-              : 'border-blue-200 bg-blue-100 text-blue-700'
-          }
-        `}
+        className={`mb-5 inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold sm:text-base ${
+          c.dark
+            ? 'border-cyan-300/25 bg-cyan-300/10 text-cyan-200'
+            : 'border-blue-200 bg-blue-100 text-blue-700'
+        }`}
       >
         <Sparkles size={16} />
-
         {eyebrow}
       </motion.span>
 
-      {/* Heading */}
-
       <motion.h2
         variants={fade}
-        className={`
-          text-4xl
-          font-extrabold
-          tracking-tight
-          sm:text-5xl
-
-          ${c.title}
-        `}
+        className={`text-4xl font-extrabold tracking-tight sm:text-5xl ${c.title}`}
       >
         {first}{' '}
 
@@ -622,20 +517,9 @@ function Heading({
         </span>
       </motion.h2>
 
-      {/* Description */}
-
       <motion.p
         variants={fade}
-        className={`
-          mx-auto
-          mt-5
-          max-w-3xl
-          text-lg
-          leading-relaxed
-          sm:text-xl
-
-          ${c.muted}
-        `}
+        className={`mx-auto mt-5 max-w-3xl text-lg leading-relaxed sm:text-xl ${c.muted}`}
       >
         {description}
       </motion.p>
@@ -664,7 +548,6 @@ function useCounter(
     }
 
     let frame = 0;
-
     let start: number | null = null;
 
     const tick = (time: number) => {
@@ -685,13 +568,11 @@ function useCounter(
       );
 
       if (progress < 1) {
-        frame =
-          requestAnimationFrame(tick);
+        frame = requestAnimationFrame(tick);
       }
     };
 
-    frame =
-      requestAnimationFrame(tick);
+    frame = requestAnimationFrame(tick);
 
     return () => {
       cancelAnimationFrame(frame);
@@ -718,17 +599,14 @@ function StatCard({
   index: number;
   c: Colors;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLElement>(null);
 
   const visible = useInView(ref, {
     once: true,
     amount: 0.3,
   });
 
-  const count = useCounter(
-    value,
-    visible
-  );
+  const count = useCounter(value, visible);
 
   const reduced = useReducedMotion();
 
@@ -743,12 +621,10 @@ function StatCard({
         opacity: 1,
         y: 0,
       }}
-      viewport={{
-        once: true,
-      }}
+      viewport={{ once: true }}
       transition={{
-        duration: 0.55,
-        delay: index * 0.09,
+        duration: reduced ? 0 : 0.55,
+        delay: reduced ? 0 : index * 0.09,
       }}
       whileHover={
         reduced
@@ -758,107 +634,41 @@ function StatCard({
               scale: 1.02,
             }
       }
-      className={`
-        group
-        relative
-        overflow-hidden
-        rounded-3xl
-        border
-        px-4
-        py-8
-        text-center
-        transition-[border-color,box-shadow]
-        duration-300
-        sm:px-6
-        sm:py-9
-
-        ${c.surface}
-      `}
+      className={`group relative overflow-hidden rounded-3xl border px-4 py-8 text-center transition-[border-color,box-shadow] duration-300 sm:px-6 sm:py-9 ${c.surface}`}
     >
-      {/* Top Accent */}
-
       <div
         className="
-          absolute
-          inset-x-8
-          top-0
-          h-[3px]
+          absolute inset-x-8 top-0 h-[3px]
           bg-gradient-to-r
-          from-transparent
-          via-cyan-400
-          to-transparent
+          from-transparent via-cyan-400 to-transparent
         "
       />
-
-      {/* Glow Effect */}
 
       <div
         className="
           pointer-events-none
-          absolute
-          -right-12
-          -top-12
-          h-36
-          w-36
-          rounded-full
-          bg-cyan-300/10
-          blur-2xl
-          transition-transform
-          duration-500
+          absolute -right-12 -top-12
+          h-36 w-36 rounded-full
+          bg-cyan-300/10 blur-2xl
+          transition-transform duration-500
           group-hover:scale-150
         "
       />
 
-      {/* Icon */}
-
       <div
-        className={`
-          relative
-          mx-auto
-          mb-5
-          flex
-          h-16
-          w-16
-          items-center
-          justify-center
-          rounded-2xl
-          transition-transform
-          duration-300
-          group-hover:scale-110
-
-          ${c.icon}
-        `}
+        className={`relative mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl transition-transform duration-300 group-hover:scale-110 ${c.icon}`}
       >
         {icon}
       </div>
 
-      {/* Counter */}
-
       <div
-        className={`
-          relative
-          text-4xl
-          font-extrabold
-          sm:text-[43px]
-
-          ${c.title}
-        `}
+        className={`relative text-4xl font-extrabold sm:text-[43px] ${c.title}`}
       >
         {count}+
       </div>
 
-      {/* Label */}
-
       <p
-        className={`
-          relative
-          mt-2
-          text-base
-          font-semibold
-          sm:text-lg
-
-          ${c.muted}
-        `}
+        className={`relative mt-2 text-base font-semibold sm:text-lg ${c.muted}`}
       >
         {label}
       </p>
@@ -883,60 +693,25 @@ function Feature({
 }) {
   return (
     <div
-      className={`
-        group
-        flex
-        items-start
-        gap-4
-        rounded-2xl
-        border
-        p-4
-        transition-colors
-        duration-300
-
-        ${
-          c.dark
-            ? 'border-white/10 bg-white/[0.045] hover:bg-white/[0.09]'
-            : 'border-blue-100 bg-blue-50/70 hover:bg-blue-100/70'
-        }
-      `}
+      className={`group flex items-start gap-4 rounded-2xl border p-4 transition-colors duration-300 ${
+        c.dark
+          ? 'border-white/10 bg-white/[0.045] hover:bg-white/[0.09]'
+          : 'border-blue-100 bg-blue-50/70 hover:bg-blue-100/70'
+      }`}
     >
       <span
-        className={`
-          flex
-          h-12
-          w-12
-          shrink-0
-          items-center
-          justify-center
-          rounded-xl
-
-          ${c.icon}
-        `}
+        className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${c.icon}`}
       >
         {icon}
       </span>
 
       <div>
-        <h4
-          className={`
-            text-lg
-            font-bold
-
-            ${c.title}
-          `}
-        >
+        <h4 className={`text-lg font-bold ${c.title}`}>
           {title}
         </h4>
 
         <p
-          className={`
-            mt-1
-            text-base
-            leading-relaxed
-
-            ${c.muted}
-          `}
+          className={`mt-1 text-base leading-relaxed ${c.muted}`}
         >
           {description}
         </p>
@@ -946,7 +721,7 @@ function Feature({
 }
 
 /* =========================================================
-   REDESIGNED ABOUT CARD
+   ABOUT CARD
 ========================================================= */
 
 function AboutCard({
@@ -981,101 +756,44 @@ function AboutCard({
         amount: 0.15,
       }}
       transition={{
-        duration: 0.55,
-        delay,
+        duration: reduced ? 0 : 0.55,
+        delay: reduced ? 0 : delay,
       }}
       whileHover={
         reduced
           ? undefined
-          : {
-              y: -5,
-            }
+          : { y: -5 }
       }
-      className={`
-        relative
-        overflow-hidden
-        rounded-3xl
-        border
-        p-6
-        transition-[border-color,box-shadow]
-        duration-300
-        sm:p-8
-
-        ${c.surface}
-      `}
+      className={`relative overflow-hidden rounded-3xl border p-6 transition-[border-color,box-shadow] duration-300 sm:p-8 ${c.surface}`}
     >
-      {/* Accent Line */}
-
       <div
         className="
-          absolute
-          left-0
-          top-0
-          h-1
-          w-full
+          absolute left-0 top-0 h-1 w-full
           bg-gradient-to-r
-          from-blue-500
-          via-cyan-400
-          to-transparent
+          from-blue-500 via-cyan-400 to-transparent
           opacity-70
         "
       />
 
-      {/* Heading */}
-
-      <div
-        className="
-          mb-5
-          flex
-          items-center
-          gap-4
-        "
-      >
+      <div className="mb-5 flex items-center gap-4">
         <span
-          className={`
-            flex
-            h-14
-            w-14
-            shrink-0
-            items-center
-            justify-center
-            rounded-2xl
-
-            ${c.icon}
-          `}
+          className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl ${c.icon}`}
         >
           {icon}
         </span>
 
         <h3
-          className={`
-            text-2xl
-            font-bold
-            sm:text-[27px]
-
-            ${c.title}
-          `}
+          className={`text-2xl font-bold sm:text-[27px] ${c.title}`}
         >
           {title}
         </h3>
       </div>
 
-      {/* Summary */}
-
       <p
-        className={`
-          mb-6
-          text-base
-          leading-[1.85]
-          sm:text-lg
-
-          ${c.body}
-        `}
+        className={`mb-6 text-base leading-[1.85] sm:text-lg ${c.body}`}
       >
         {summary}
       </p>
-
-      {/* Feature Blocks */}
 
       <div className="space-y-3">
         {children}
@@ -1085,7 +803,7 @@ function AboutCard({
 }
 
 /* =========================================================
-   PROFESSIONAL TECH STACK CARD
+   TECH STACK CARD
 ========================================================= */
 
 function TechCard({
@@ -1120,170 +838,76 @@ function TechCard({
         amount: 0.15,
       }}
       transition={{
-        duration: 0.55,
-        delay: index * 0.08,
+        duration: reduced ? 0 : 0.55,
+        delay: reduced ? 0 : index * 0.08,
       }}
       whileHover={
         reduced
           ? undefined
-          : {
-              y: -6,
-            }
+          : { y: -6 }
       }
-      className={`
-        group
-        relative
-        overflow-hidden
-        rounded-3xl
-        border
-        p-7
-        transition-[border-color,box-shadow]
-        duration-300
-        sm:p-8
-
-        ${c.surface}
-      `}
+      className={`group relative overflow-hidden rounded-3xl border p-7 transition-[border-color,box-shadow] duration-300 sm:p-8 ${c.surface}`}
     >
-      {/* Hover Glow */}
-
       <div
         className="
           pointer-events-none
-          absolute
-          -right-16
-          -top-16
-          h-48
-          w-48
-          rounded-full
-          bg-blue-400/10
-          blur-3xl
-          transition-transform
-          duration-500
+          absolute -right-16 -top-16
+          h-48 w-48 rounded-full
+          bg-blue-400/10 blur-3xl
+          transition-transform duration-500
           group-hover:scale-125
         "
       />
 
-      {/* Card Header */}
-
-      <div
-        className="
-          relative
-          mb-6
-          flex
-          items-center
-          gap-4
-        "
-      >
+      <div className="relative mb-6 flex items-center gap-4">
         <span
-          className={`
-            flex
-            h-14
-            w-14
-            shrink-0
-            items-center
-            justify-center
-            rounded-2xl
-
-            ${c.icon}
-          `}
+          className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl ${c.icon}`}
         >
           {icon}
         </span>
 
         <div>
           <h3
-            className={`
-              text-2xl
-              font-bold
-
-              ${c.title}
-            `}
+            className={`text-2xl font-bold ${c.title}`}
           >
             {title}
           </h3>
 
           <p
-            className={`
-              mt-1
-              text-sm
-              sm:text-base
-
-              ${c.muted}
-            `}
+            className={`mt-1 text-sm sm:text-base ${c.muted}`}
           >
             {subtitle}
           </p>
         </div>
       </div>
 
-      {/* Divider */}
-
       <div
-        className={`
-          relative
-          mb-6
-          border-t
-
-          ${c.separator}
-        `}
+        className={`relative mb-6 border-t ${c.separator}`}
       />
 
-      {/* Technology Badges */}
-
-      <div
-        className="
-          relative
-          flex
-          flex-wrap
-          gap-3
-        "
-      >
+      <div className="relative flex flex-wrap gap-3">
         {skills.map((skill) => (
           <span
             key={skill}
-            className={`
-              rounded-xl
-              border
-              px-4
-              py-2.5
-              text-base
-              font-semibold
-              transition-colors
-              duration-300
-
-              ${
-                c.dark
-                  ? 'border-sky-300/20 bg-[#183c65]/70 text-sky-100 group-hover:border-sky-300/35'
-                  : 'border-blue-200 bg-white text-blue-800 group-hover:border-sky-300'
-              }
-            `}
+            className={`rounded-xl border px-4 py-2.5 text-base font-semibold transition-colors duration-300 ${
+              c.dark
+                ? 'border-sky-300/20 bg-[#183c65]/70 text-sky-100 group-hover:border-sky-300/35'
+                : 'border-blue-200 bg-white text-blue-800 group-hover:border-sky-300'
+            }`}
           >
             {skill}
           </span>
         ))}
       </div>
 
-      {/* Bottom Information */}
-
       <div
-        className={`
-          relative
-          mt-7
-          flex
-          items-center
-          gap-2
-          text-sm
-          font-medium
-
-          ${
-            c.dark
-              ? 'text-cyan-200'
-              : 'text-blue-700'
-          }
-        `}
+        className={`relative mt-7 flex items-center gap-2 text-sm font-medium ${
+          c.dark
+            ? 'text-cyan-200'
+            : 'text-blue-700'
+        }`}
       >
         <CheckCircle2 size={17} />
-
         Technologies & tools
       </div>
     </motion.article>
@@ -1314,36 +938,20 @@ function ProfilePhoto({
         scale: 1,
       }}
       transition={{
-        duration: 0.85,
+        duration: reduced ? 0 : 0.85,
       }}
       className="
-        relative
-        mx-auto
-        flex
-        w-full
-        max-w-[550px]
-        items-center
-        justify-center
-        px-5
-        py-9
+        relative mx-auto flex w-full
+        max-w-[550px] items-center
+        justify-center px-5 py-9
       "
     >
-      {/* Background Glow */}
-
       <motion.div
-        className={`
-          pointer-events-none
-          absolute
-          inset-[13%]
-          rounded-full
-          blur-[80px]
-
-          ${
-            c.dark
-              ? 'bg-cyan-300/25'
-              : 'bg-sky-400/25'
-          }
-        `}
+        className={`pointer-events-none absolute inset-[13%] rounded-full blur-[80px] ${
+          c.dark
+            ? 'bg-cyan-300/25'
+            : 'bg-sky-400/25'
+        }`}
         animate={
           reduced
             ? undefined
@@ -1358,25 +966,13 @@ function ProfilePhoto({
         }}
       />
 
-      {/* Rotating Decorative Ring */}
-
       <motion.div
         aria-hidden="true"
-        className={`
-          pointer-events-none
-          absolute
-          aspect-square
-          w-[94%]
-          rounded-full
-          border
-          border-dashed
-
-          ${
-            c.dark
-              ? 'border-cyan-200/25'
-              : 'border-blue-400/30'
-          }
-        `}
+        className={`pointer-events-none absolute aspect-square w-[94%] rounded-full border border-dashed ${
+          c.dark
+            ? 'border-cyan-200/25'
+            : 'border-blue-400/30'
+        }`}
         animate={
           reduced
             ? undefined
@@ -1391,19 +987,13 @@ function ProfilePhoto({
         }}
       />
 
-      {/* Photo */}
-
       <motion.div
         className="
-          relative
-          z-10
-          w-[91%]
+          relative z-10 w-[91%]
           max-w-[465px]
           rounded-[34px]
           bg-gradient-to-br
-          from-blue-300
-          via-cyan-300
-          to-blue-600
+          from-blue-300 via-cyan-300 to-blue-600
           p-[5px]
           shadow-[0_28px_75px_rgba(8,35,78,0.28)]
         "
@@ -1422,10 +1012,8 @@ function ProfilePhoto({
       >
         <div
           className="
-            relative
-            aspect-[4/5]
-            overflow-hidden
-            rounded-[29px]
+            relative aspect-[4/5]
+            overflow-hidden rounded-[29px]
             bg-[#b7c9dc]
           "
         >
@@ -1434,25 +1022,16 @@ function ProfilePhoto({
             alt="Kodni Diyana professional portrait"
             loading="eager"
             className="
-              h-full
-              w-full
-              object-cover
-              object-center
+              h-full w-full object-cover object-center
             "
           />
-
-          {/* Subtle Bottom Gradient */}
 
           <div
             className="
               pointer-events-none
-              absolute
-              inset-x-0
-              bottom-0
-              h-20
+              absolute inset-x-0 bottom-0 h-20
               bg-gradient-to-t
-              from-[#163e67]/20
-              to-transparent
+              from-[#163e67]/20 to-transparent
             "
           />
         </div>
@@ -1471,8 +1050,7 @@ const techGroups = [
 
     title: 'Frontend',
 
-    subtitle:
-      'Interfaces & user experiences',
+    subtitle: 'Interfaces & user experiences',
 
     skills: [
       'React.js',
@@ -1487,8 +1065,7 @@ const techGroups = [
 
     title: 'Backend',
 
-    subtitle:
-      'APIs & application logic',
+    subtitle: 'APIs & application logic',
 
     skills: [
       'Node.js',
@@ -1503,8 +1080,7 @@ const techGroups = [
 
     title: 'Database',
 
-    subtitle:
-      'Data storage & management',
+    subtitle: 'Data storage & management',
 
     skills: [
       'MongoDB',
@@ -1517,8 +1093,7 @@ const techGroups = [
 
     title: 'Development Tools',
 
-    subtitle:
-      'Workflow & collaboration',
+    subtitle: 'Workflow & collaboration',
 
     skills: [
       'Git & GitHub',
@@ -1539,20 +1114,11 @@ export function Home() {
 
   return (
     <main
-      className={`
-        relative
-        isolate
-        min-h-screen
-        overflow-hidden
-        transition-colors
-        duration-500
-
-        ${
-          c.dark
-            ? 'bg-[#193a63]'
-            : 'bg-[#f4f9ff]'
-        }
-      `}
+      className={`relative isolate min-h-screen overflow-hidden transition-colors duration-500 ${
+        c.dark
+          ? 'bg-[#193a63]'
+          : 'bg-[#f4f9ff]'
+      }`}
     >
       {/* Background */}
 
@@ -1570,35 +1136,23 @@ export function Home() {
 
         <section
           className="
-            relative
-            flex
-            min-h-[82vh]
-            items-center
-            py-16
-            lg:py-20
+            relative flex min-h-[82vh]
+            items-center py-16 lg:py-20
           "
         >
           <div
             className="
-              mx-auto
-              w-full
-              max-w-[1400px]
-              px-5
-              sm:px-8
-              lg:px-12
-              xl:px-16
+              mx-auto w-full max-w-[1400px]
+              px-5 sm:px-8 lg:px-12 xl:px-16
             "
           >
             <div
               className="
-                grid
-                items-center
-                gap-10
+                grid items-center gap-10
                 lg:grid-cols-[1.14fr_1fr]
                 lg:gap-14
               "
             >
-
               {/* LEFT INTRODUCTION */}
 
               <motion.div
@@ -1606,42 +1160,23 @@ export function Home() {
                 initial="hidden"
                 animate="show"
                 className="
-                  order-2
-                  text-center
-                  lg:order-1
-                  lg:text-left
+                  order-2 text-center
+                  lg:order-1 lg:text-left
                 "
               >
-
                 {/* Availability Badge */}
 
                 <motion.div variants={fade}>
                   <span
-                    className={`
-                      mb-7
-                      inline-flex
-                      items-center
-                      gap-2
-                      rounded-full
-                      border
-                      px-4
-                      py-2
-                      text-sm
-                      font-semibold
-                      sm:text-base
-
-                      ${
-                        c.dark
-                          ? 'border-cyan-200/25 bg-cyan-300/10 text-cyan-100'
-                          : 'border-blue-200 bg-white/80 text-blue-800'
-                      }
-                    `}
+                    className={`mb-7 inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold sm:text-base ${
+                      c.dark
+                        ? 'border-cyan-200/25 bg-cyan-300/10 text-cyan-100'
+                        : 'border-blue-200 bg-white/80 text-blue-800'
+                    }`}
                   >
                     <span
                       className="
-                        h-2.5
-                        w-2.5
-                        rounded-full
+                        h-2.5 w-2.5 rounded-full
                         bg-emerald-400
                       "
                     />
@@ -1656,18 +1191,11 @@ export function Home() {
 
                 <motion.p
                   variants={fade}
-                  className={`
-                    mb-3
-                    text-xl
-                    font-semibold
-                    sm:text-2xl
-
-                    ${
-                      c.dark
-                        ? 'text-blue-200'
-                        : 'text-blue-700'
-                    }
-                  `}
+                  className={`mb-3 text-xl font-semibold sm:text-2xl ${
+                    c.dark
+                      ? 'text-blue-200'
+                      : 'text-blue-700'
+                  }`}
                 >
                   Hello, I'm
                 </motion.p>
@@ -1676,16 +1204,7 @@ export function Home() {
 
                 <motion.h1
                   variants={fade}
-                  className={`
-                    mb-6
-                    whitespace-nowrap
-                    text-[clamp(1.8rem,4.5vw,4.4rem)]
-                    font-extrabold
-                    leading-tight
-                    tracking-tight
-
-                    ${c.title}
-                  `}
+                  className={`mb-6 whitespace-nowrap text-[clamp(1.8rem,4.5vw,4.4rem)] font-extrabold leading-tight tracking-tight ${c.title}`}
                 >
                   Kodni{' '}
 
@@ -1707,15 +1226,7 @@ export function Home() {
 
                 <motion.p
                   variants={fade}
-                  className={`
-                    mb-5
-                    text-lg
-                    font-bold
-                    sm:text-xl
-                    xl:text-2xl
-
-                    ${c.title}
-                  `}
+                  className={`mb-5 text-lg font-bold sm:text-xl xl:text-2xl ${c.title}`}
                 >
                   Full Stack Developer{' '}
 
@@ -1730,17 +1241,7 @@ export function Home() {
 
                 <motion.p
                   variants={fade}
-                  className={`
-                    mx-auto
-                    mb-9
-                    max-w-[610px]
-                    text-lg
-                    leading-[1.85]
-                    sm:text-xl
-                    lg:mx-0
-
-                    ${c.muted}
-                  `}
+                  className={`mx-auto mb-9 max-w-[610px] text-lg leading-[1.85] sm:text-xl lg:mx-0 ${c.muted}`}
                 >
                   I enjoy building beautiful,
                   functional, and user-friendly
@@ -1751,41 +1252,31 @@ export function Home() {
                   and meaningful digital solutions.
                 </motion.p>
 
-                {/* Buttons */}
+                {/* =================================================
+                    HERO BUTTONS
+                ================================================= */}
 
                 <motion.div
                   variants={fade}
                   className="
-                    mb-8
-                    flex
-                    flex-col
-                    items-center
-                    justify-center
-                    gap-4
-                    sm:flex-row
-                    lg:justify-start
+                    mb-8 flex flex-col items-center
+                    justify-center gap-4
+                    sm:flex-row lg:justify-start
                   "
                 >
+                  {/* View Projects */}
+
                   <Link
                     to="/projects"
                     className="
-                      group
-                      inline-flex
-                      w-full
-                      items-center
-                      justify-center
-                      gap-2
+                      group inline-flex w-full
+                      items-center justify-center gap-2
                       rounded-xl
                       bg-gradient-to-r
-                      from-blue-600
-                      to-cyan-500
-                      px-7
-                      py-4
-                      text-base
-                      font-bold
-                      text-white
-                      shadow-lg
-                      shadow-blue-500/25
+                      from-blue-600 to-cyan-500
+                      px-7 py-4
+                      text-base font-bold text-white
+                      shadow-lg shadow-blue-500/25
                       transition-all
                       hover:-translate-y-1
                       hover:shadow-blue-500/40
@@ -1803,50 +1294,33 @@ export function Home() {
                     />
                   </Link>
 
+                  {/* ===============================================
+                      UPDATED CV DOWNLOAD BUTTON
+
+                      This downloads the PDF directly rather than
+                      relying on the browser's PDF preview.
+
+                      Required:
+                      public/mycv.pdf
+                  =============================================== */}
+
                   <a
-                    href="/diyaCV.pdf"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`
-                      inline-flex
-                      w-full
-                      items-center
-                      justify-center
-                      gap-2
-                      rounded-xl
-                      border
-                      px-7
-                      py-4
-                      text-base
-                      font-bold
-                      transition-all
-                      hover:-translate-y-1
-                      sm:w-auto
-
-                      ${c.secondary}
-                    `}
-                  >
-                    <Download size={19} />
-
-                    Download CV
-                  </a>
+  href={CV_PATH}
+  download={CV_DOWNLOAD_NAME}
+  type="application/pdf"
+  aria-label="Download Kodni Diyana CV as PDF"
+  className={`group inline-flex w-full items-center justify-center gap-2 rounded-xl border px-7 py-4 text-base font-bold transition-all hover:-translate-y-1 sm:w-auto ${c.secondary}`}
+>
+  <Download size={19} />
+  Download CV
+</a>
                 </motion.div>
 
                 {/* Quick Highlights */}
 
                 <motion.div
                   variants={fade}
-                  className={`
-                    flex
-                    flex-wrap
-                    justify-center
-                    gap-x-6
-                    gap-y-3
-                    text-base
-                    lg:justify-start
-
-                    ${c.muted}
-                  `}
+                  className={`flex flex-wrap justify-center gap-x-6 gap-y-3 text-base lg:justify-start ${c.muted}`}
                 >
                   {[
                     'Responsive Design',
@@ -1855,11 +1329,7 @@ export function Home() {
                   ].map((item) => (
                     <span
                       key={item}
-                      className="
-                        inline-flex
-                        items-center
-                        gap-2
-                      "
+                      className="inline-flex items-center gap-2"
                     >
                       <CheckCircle2
                         size={17}
@@ -1877,7 +1347,6 @@ export function Home() {
               <div className="order-1 lg:order-2">
                 <ProfilePhoto c={c} />
               </div>
-
             </div>
           </div>
 
@@ -1886,23 +1355,7 @@ export function Home() {
           <motion.a
             href="#statistics"
             aria-label="Scroll to portfolio statistics"
-            className={`
-              absolute
-              bottom-0
-              left-1/2
-              hidden
-              -translate-x-1/2
-              flex-col
-              items-center
-              gap-1
-              text-xs
-              font-semibold
-              uppercase
-              tracking-[0.2em]
-              lg:flex
-
-              ${c.muted}
-            `}
+            className={`absolute bottom-0 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-1 text-xs font-semibold uppercase tracking-[0.2em] lg:flex ${c.muted}`}
             animate={
               reduced
                 ? undefined
@@ -1927,28 +1380,18 @@ export function Home() {
 
         <section
           id="statistics"
-          className="
-            scroll-mt-24
-            py-12
-            sm:py-16
-          "
+          className="scroll-mt-24 py-12 sm:py-16"
         >
           <div
             className="
-              mx-auto
-              max-w-7xl
-              px-5
-              sm:px-8
-              lg:px-12
+              mx-auto max-w-7xl
+              px-5 sm:px-8 lg:px-12
             "
           >
             <div
               className="
-                grid
-                grid-cols-2
-                gap-4
-                sm:gap-6
-                lg:grid-cols-4
+                grid grid-cols-2 gap-4
+                sm:gap-6 lg:grid-cols-4
               "
             >
               <StatCard
@@ -1992,19 +1435,12 @@ export function Home() {
 
         <section
           id="about"
-          className="
-            scroll-mt-24
-            py-20
-            sm:py-28
-          "
+          className="scroll-mt-24 py-20 sm:py-28"
         >
           <div
             className="
-              mx-auto
-              max-w-7xl
-              px-5
-              sm:px-8
-              lg:px-12
+              mx-auto max-w-7xl
+              px-5 sm:px-8 lg:px-12
             "
           >
             <Heading
@@ -2017,13 +1453,10 @@ export function Home() {
 
             <div
               className="
-                grid
-                items-stretch
-                gap-7
+                grid items-stretch gap-7
                 lg:grid-cols-2
               "
             >
-
               {/* Technical Background */}
 
               <AboutCard
@@ -2098,22 +1531,7 @@ export function Home() {
             <div className="mt-12 text-center">
               <Link
                 to="/about"
-                className={`
-                  group
-                  inline-flex
-                  items-center
-                  gap-2
-                  rounded-xl
-                  border
-                  px-7
-                  py-3.5
-                  text-base
-                  font-bold
-                  transition-all
-                  hover:-translate-y-1
-
-                  ${c.secondary}
-                `}
+                className={`group inline-flex items-center gap-2 rounded-xl border px-7 py-3.5 text-base font-bold transition-all hover:-translate-y-1 ${c.secondary}`}
               >
                 More About Me
 
@@ -2135,25 +1553,16 @@ export function Home() {
 
         <section
           id="skills"
-          className={`
-            scroll-mt-24
-            py-20
-            sm:py-28
-
-            ${
-              c.dark
-                ? 'bg-[#0d2846]/20'
-                : 'bg-white/30'
-            }
-          `}
+          className={`scroll-mt-24 py-20 sm:py-28 ${
+            c.dark
+              ? 'bg-[#0d2846]/20'
+              : 'bg-white/30'
+          }`}
         >
           <div
             className="
-              mx-auto
-              max-w-7xl
-              px-5
-              sm:px-8
-              lg:px-12
+              mx-auto max-w-7xl
+              px-5 sm:px-8 lg:px-12
             "
           >
             <Heading
@@ -2164,36 +1573,30 @@ export function Home() {
               c={c}
             />
 
-            {/* Professional Four Card Grid */}
+            {/* Four Card Grid */}
 
             <div
               className="
-                grid
-                gap-7
+                grid gap-7
                 lg:grid-cols-2
               "
             >
-              {techGroups.map(
-                (group, index) => (
-                  <TechCard
-                    key={group.title}
-                    {...group}
-                    index={index}
-                    c={c}
-                  />
-                )
-              )}
+              {techGroups.map((group, index) => (
+                <TechCard
+                  key={group.title}
+                  {...group}
+                  index={index}
+                  c={c}
+                />
+              ))}
             </div>
 
             {/* Technology Highlights */}
 
             <div
               className="
-                mt-12
-                flex
-                flex-wrap
-                justify-center
-                gap-3
+                mt-12 flex flex-wrap
+                justify-center gap-3
               "
             >
               {[
@@ -2201,27 +1604,22 @@ export function Home() {
                   icon: <Code2 size={18} />,
                   label: 'Clean Code',
                 },
-
                 {
                   icon: <Globe size={18} />,
                   label: 'Responsive Web',
                 },
-
                 {
                   icon: <Layers size={18} />,
                   label: 'Modern Frameworks',
                 },
-
                 {
                   icon: <Figma size={18} />,
                   label: 'UI/UX Design',
                 },
-
                 {
                   icon: <ShieldCheck size={18} />,
                   label: 'User-Centered',
                 },
-
                 {
                   icon: <MousePointer2 size={18} />,
                   label: 'Interactive UI',
@@ -2229,23 +1627,11 @@ export function Home() {
               ].map((item) => (
                 <span
                   key={item.label}
-                  className={`
-                    inline-flex
-                    items-center
-                    gap-2
-                    rounded-full
-                    border
-                    px-4
-                    py-2.5
-                    text-base
-                    font-medium
-
-                    ${
-                      c.dark
-                        ? 'border-white/20 bg-white/10 text-slate-200'
-                        : 'border-blue-200 bg-white/80 text-slate-700'
-                    }
-                  `}
+                  className={`inline-flex items-center gap-2 rounded-full border px-4 py-2.5 text-base font-medium ${
+                    c.dark
+                      ? 'border-white/20 bg-white/10 text-slate-200'
+                      : 'border-blue-200 bg-white/80 text-slate-700'
+                  }`}
                 >
                   <span
                     className={
@@ -2271,10 +1657,8 @@ export function Home() {
         <section className="py-20 sm:py-28">
           <div
             className="
-              mx-auto
-              max-w-5xl
-              px-5
-              sm:px-8
+              mx-auto max-w-5xl
+              px-5 sm:px-8
             "
           >
             <motion.div
@@ -2286,78 +1670,39 @@ export function Home() {
                 opacity: 1,
                 y: 0,
               }}
-              viewport={{
-                once: true,
-              }}
+              viewport={{ once: true }}
               transition={{
-                duration: 0.65,
+                duration: reduced ? 0 : 0.65,
               }}
-              className={`
-                relative
-                overflow-hidden
-                rounded-[32px]
-                border
-                px-6
-                py-16
-                text-center
-                shadow-xl
-                sm:px-12
-                sm:py-20
-
-                ${
-                  c.dark
-                    ? 'border-cyan-200/25 bg-gradient-to-br from-[#2c5c90] to-[#173a62]'
-                    : 'border-blue-200 bg-gradient-to-br from-white via-[#eaf5ff] to-[#d5eaff]'
-                }
-              `}
+              className={`relative overflow-hidden rounded-[32px] border px-6 py-16 text-center shadow-xl sm:px-12 sm:py-20 ${
+                c.dark
+                  ? 'border-cyan-200/25 bg-gradient-to-br from-[#2c5c90] to-[#173a62]'
+                  : 'border-blue-200 bg-gradient-to-br from-white via-[#eaf5ff] to-[#d5eaff]'
+              }`}
             >
               {/* Decorative Glows */}
 
               <div
                 className="
-                  pointer-events-none
-                  absolute
-                  -left-20
-                  -top-24
-                  h-64
-                  w-64
-                  rounded-full
-                  bg-cyan-400/15
-                  blur-3xl
+                  pointer-events-none absolute
+                  -left-20 -top-24 h-64 w-64
+                  rounded-full bg-cyan-400/15 blur-3xl
                 "
               />
 
               <div
                 className="
-                  pointer-events-none
-                  absolute
-                  -bottom-24
-                  -right-20
-                  h-64
-                  w-64
-                  rounded-full
-                  bg-blue-400/15
-                  blur-3xl
+                  pointer-events-none absolute
+                  -bottom-24 -right-20 h-64 w-64
+                  rounded-full bg-blue-400/15 blur-3xl
                 "
               />
 
               <div className="relative">
-
                 {/* Contact Icon */}
 
                 <span
-                  className={`
-                    mx-auto
-                    mb-6
-                    flex
-                    h-16
-                    w-16
-                    items-center
-                    justify-center
-                    rounded-2xl
-
-                    ${c.icon}
-                  `}
+                  className={`mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl ${c.icon}`}
                 >
                   <Mail size={30} />
                 </span>
@@ -2365,19 +1710,11 @@ export function Home() {
                 {/* Small Title */}
 
                 <p
-                  className={`
-                    mb-3
-                    text-base
-                    font-bold
-                    uppercase
-                    tracking-[0.15em]
-
-                    ${
-                      c.dark
-                        ? 'text-cyan-200'
-                        : 'text-blue-700'
-                    }
-                  `}
+                  className={`mb-3 text-base font-bold uppercase tracking-[0.15em] ${
+                    c.dark
+                      ? 'text-cyan-200'
+                      : 'text-blue-700'
+                  }`}
                 >
                   Let's Connect
                 </p>
@@ -2385,14 +1722,7 @@ export function Home() {
                 {/* Heading */}
 
                 <h2
-                  className={`
-                    mb-5
-                    text-4xl
-                    font-extrabold
-                    sm:text-5xl
-
-                    ${c.title}
-                  `}
+                  className={`mb-5 text-4xl font-extrabold sm:text-5xl ${c.title}`}
                 >
                   Have a Project in Mind?
                 </h2>
@@ -2400,16 +1730,7 @@ export function Home() {
                 {/* Description */}
 
                 <p
-                  className={`
-                    mx-auto
-                    mb-9
-                    max-w-2xl
-                    text-lg
-                    leading-relaxed
-                    sm:text-xl
-
-                    ${c.muted}
-                  `}
+                  className={`mx-auto mb-9 max-w-2xl text-lg leading-relaxed sm:text-xl ${c.muted}`}
                 >
                   I'm always interested in new ideas,
                   collaborations, and meaningful
@@ -2421,32 +1742,20 @@ export function Home() {
 
                 <div
                   className="
-                    flex
-                    flex-col
-                    justify-center
-                    gap-4
-                    sm:flex-row
+                    flex flex-col justify-center
+                    gap-4 sm:flex-row
                   "
                 >
                   <Link
                     to="/contact"
                     className="
-                      group
-                      inline-flex
-                      items-center
-                      justify-center
-                      gap-2
-                      rounded-xl
+                      group inline-flex items-center
+                      justify-center gap-2 rounded-xl
                       bg-gradient-to-r
-                      from-blue-600
-                      to-cyan-500
-                      px-8
-                      py-4
-                      text-base
-                      font-bold
-                      text-white
-                      shadow-lg
-                      transition-all
+                      from-blue-600 to-cyan-500
+                      px-8 py-4
+                      text-base font-bold text-white
+                      shadow-lg transition-all
                       hover:-translate-y-1
                     "
                   >
@@ -2465,22 +1774,7 @@ export function Home() {
 
                   <Link
                     to="/projects"
-                    className={`
-                      inline-flex
-                      items-center
-                      justify-center
-                      gap-2
-                      rounded-xl
-                      border
-                      px-8
-                      py-4
-                      text-base
-                      font-bold
-                      transition-all
-                      hover:-translate-y-1
-
-                      ${c.secondary}
-                    `}
+                    className={`inline-flex items-center justify-center gap-2 rounded-xl border px-8 py-4 text-base font-bold transition-all hover:-translate-y-1 ${c.secondary}`}
                   >
                     Explore My Work
 
